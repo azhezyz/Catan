@@ -44,7 +44,7 @@
     </ownedViews>
     <ownedViews xmi:type="viewpoint:DView" uid="_zYse8PS1EfCTANryoNmMNg">
       <viewpoint xmi:type="description:Viewpoint" href="platform:/plugin/org.eclipse.papyrus.sirius.uml.diagram.clazz/description/papyrus_class.odesign#//@ownedViewpoints[name='ClassDiagram']"/>
-      <ownedRepresentationDescriptors xmi:type="viewpoint:DRepresentationDescriptor" uid="_zaeAkPS1EfCTANryoNmMNg" name="New Class Diagram" repPath="#_zaWEwPS1EfCTANryoNmMNg" changeId="1769892466687">
+      <ownedRepresentationDescriptors xmi:type="viewpoint:DRepresentationDescriptor" uid="_zaeAkPS1EfCTANryoNmMNg" name="New Class Diagram" repPath="#_zaWEwPS1EfCTANryoNmMNg" changeId="1769906874570">
         <description xmi:type="description_1:DiagramDescription" href="platform:/plugin/org.eclipse.papyrus.sirius.uml.diagram.clazz/description/papyrus_class.odesign#//@ownedViewpoints[name='ClassDiagram']/@ownedRepresentations[name='ClassDiagram']"/>
         <target xmi:type="uml:Model" href="catan.uml#_zXV0EPS1EfCTANryoNmMNg"/>
       </ownedRepresentationDescriptors>
