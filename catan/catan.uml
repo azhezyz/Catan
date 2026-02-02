@@ -1,9 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xmi:XMI xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:Codegen="http://www.eclipse.org/papyrus/Codegen/1" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+<xmi:XMI xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Codegen="http://www.eclipse.org/papyrus/Codegen/1" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
   <uml:Model xmi:id="_zXV0EPS1EfCTANryoNmMNg" name="catan">
     <packageImport xmi:type="uml:PackageImport" xmi:id="_zbkMwPS1EfCTANryoNmMNg">
       <importedPackage xmi:type="uml:Model" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"/>
     </packageImport>
+    <packagedElement xmi:type="uml:Class" xmi:id="_fE6mwP-4EfCM9vlOS2eP6g" name="Catan"/>
+    <packagedElement xmi:type="uml:Class" xmi:id="_4eQ0oP-4EfCM9vlOS2eP6g" name="Node">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="__MAfAP-4EfCM9vlOS2eP6g" name="id">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Integer"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_YWApUP-5EfCM9vlOS2eP6g" name="Property1" type="_UMM7UP-5EfCM9vlOS2eP6g"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_UMM7UP-5EfCM9vlOS2eP6g" name="Building" isAbstract="true">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_OlhUwP-7EfCM9vlOS2eP6g" name="owner"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_b36p0P-5EfCM9vlOS2eP6g" name="Path">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_sfEM0P-6EfCM9vlOS2eP6g" name="id">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Integer"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_yFaxUP-6EfCM9vlOS2eP6g" name="a" type="_4eQ0oP-4EfCM9vlOS2eP6g"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_7uSJAP-6EfCM9vlOS2eP6g" name="b" type="_4eQ0oP-4EfCM9vlOS2eP6g"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="__ZEYsP-6EfCM9vlOS2eP6g" name="Property1"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_jEV-0P-6EfCM9vlOS2eP6g" memberEnd="_jEWl4v-6EfCM9vlOS2eP6g _jEWl4_-6EfCM9vlOS2eP6g">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_jEWl4P-6EfCM9vlOS2eP6g" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_jEWl4f-6EfCM9vlOS2eP6g" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <name xsi:nil="true"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_jEWl4v-6EfCM9vlOS2eP6g" name="node" type="_4eQ0oP-4EfCM9vlOS2eP6g" association="_jEV-0P-6EfCM9vlOS2eP6g"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_jEWl4_-6EfCM9vlOS2eP6g" name="path" type="_b36p0P-5EfCM9vlOS2eP6g" association="_jEV-0P-6EfCM9vlOS2eP6g"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_jsGiYP-6EfCM9vlOS2eP6g" memberEnd="_jsGiY_-6EfCM9vlOS2eP6g _jsHJcP-6EfCM9vlOS2eP6g">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_jsGiYf-6EfCM9vlOS2eP6g" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_jsGiYv-6EfCM9vlOS2eP6g" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <name xsi:nil="true"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_jsGiY_-6EfCM9vlOS2eP6g" name="node" type="_4eQ0oP-4EfCM9vlOS2eP6g" association="_jsGiYP-6EfCM9vlOS2eP6g"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_jsHJcP-6EfCM9vlOS2eP6g" name="path" type="_b36p0P-5EfCM9vlOS2eP6g" association="_jsGiYP-6EfCM9vlOS2eP6g"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_DUcpIP-7EfCM9vlOS2eP6g" memberEnd="_DUcpI_-7EfCM9vlOS2eP6g _DUdQMP-7EfCM9vlOS2eP6g">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_DUcpIf-7EfCM9vlOS2eP6g" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_DUcpIv-7EfCM9vlOS2eP6g" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <name xsi:nil="true"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_DUcpI_-7EfCM9vlOS2eP6g" name="building" type="_UMM7UP-5EfCM9vlOS2eP6g" association="_DUcpIP-7EfCM9vlOS2eP6g"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_DUdQMP-7EfCM9vlOS2eP6g" name="node" type="_4eQ0oP-4EfCM9vlOS2eP6g" association="_DUcpIP-7EfCM9vlOS2eP6g"/>
+    </packagedElement>
     <profileApplication xmi:type="uml:ProfileApplication" xmi:id="_po9NwPS2EfC8E6KcJtQtMw">
       <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_po_qAPS2EfC8E6KcJtQtMw" source="http://www.eclipse.org/uml2/2.0.0/UML">
         <references xmi:type="ecore:EPackage" href="http://www.eclipse.org/papyrus/Codegen/1#/"/>
