@@ -4,7 +4,7 @@
   <artifactId>org.eclipse.papyrus.javagen.catan</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <properties>
-  <sonar.organization>azhezyz</sonar.organization>
+    <sonar.organization>azhezyz</sonar.organization>
   </properties>
   <build>
   
