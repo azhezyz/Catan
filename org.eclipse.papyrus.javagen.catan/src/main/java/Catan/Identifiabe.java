@@ -4,13 +4,11 @@
 
 package Catan;
 
-/************************************************************/
-/**
- * 
+/*
+ * Identifiable is a simple interface. 
+ * Any class that "implements" this must provide an ID number.
+ * This helps the Board class organize Tiles, Nodes, and Paths into searchable lists.
  */
-public interface Identifiabe {
-	/**
-	 * 
-	 */
-	public void getId();
+public interface Identifiable {
+    int getId();
 }

@@ -4,100 +4,117 @@
 
 package Catan;
 
-/************************************************************/
-
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
-/**
- * 
+/*
+ * Represents a "Node" (an intersection point) on the hex grid.
+ * Nodes are where buildings (Settlements and Cities) are placed.
  */
-public class Node {
-	/**
-	 * 
-	 */
-	private int id;
-	/**
-	 * 
-	 */
-	private Set<Integer> adjacentTileIds;
-	/**
-	 * 
-	 */
-	private Set<Integer> adjacentNodeIds;
-	/**
-	 * 
-	 */
-	private Player owner;
-	/**
-	 * 
-	 */
-	private Building building;
+public final class Node implements Identifiable {
+    private final int id;
+    private final Set<Integer> adjacentTileIds;
+    private final Set<Integer> adjacentNodeIds;
+    private Player owner;
+    private Building building;
 
-	/**
-	 * 
-	 */
-	public Node(int id, Set<Integer> adjacentTileIds, Set<Integer> adjacentNodeIds) {
-	}
+    // Constructor defines the ID and which tiles/nodes are next to this one.
+    public Node(int id, Set<Integer> adjacentTileIds, Set<Integer> adjacentNodeIds) {
+        if (id < 0) {
+            throw new IllegalArgumentException("Node id must be non-negative.");
+        }
+        this.id = id;
+        this.adjacentTileIds = new HashSet<>(Objects.requireNonNull(adjacentTileIds, "adjacentTileIds"));
+        if (this.adjacentTileIds.isEmpty()) {
+            throw new IllegalArgumentException("Node must have at least one adjacent tile.");
+        }
+        this.adjacentNodeIds = new HashSet<>(Objects.requireNonNull(adjacentNodeIds, "adjacentNodeIds"));
+        this.building = Building.empty();
+    }
 
-	/**
-	 * 
-	 * @param Board 
-	 * @param player 
-	 */
-	public boolean canBuildSettlement(Board Board, Player player) {
+    // Returns the IDs of other nodes connected directly to this one by a path.
+    public Set<Integer> getAdjacentNodeIds() {
+        return Collections.unmodifiableSet(adjacentNodeIds);
+    }
+
+    // A node can be upgraded if the player already owns a settlement there.
+    public boolean canUpgradeToCity(Player player) {
+        return owner != null && owner.equals(player)
+                && building.getType() == BuildingType.SETTLEMENT;
+    }
+
+   /*
+     * Settlement Building Rules:
+     * 1. The spot must be empty.
+     * 2. No buildings can be on any neighboring nodes (Distance Rule).
+     * 3. The player must have a road connecting to this node.
+     */
+    public boolean canBuildSettlement(Board board, Player player) {
+        if (owner != null) {
+            return false;
+        }
+        // Distance Rule check
+        for (int neighborId : adjacentNodeIds) {
+            Node neighbor = board.getNode(neighborId);
+            if (neighbor.isClaimed()) {
+                return false;
+            }
+        }
+        // Road connection check
+        for (Path path : board.pathsAdjacentToNode(id)) {
+            if (path.isOwnedBy(player)) {
+                return true;
+            }
+        }
         return false;
     }
 
-	/**
-	 * 
-	 */
-	public int getId() {
-        return 0;
+    public int getId() {
+        return id;
     }
 
-	/**
-	 * 
-	 */
-	public Set<Integer> getAdjacentTileIds() {
-        return Set.of();
+    public Set<Integer> getAdjacentTileIds() {
+        return Collections.unmodifiableSet(adjacentTileIds);
     }
 
-	/**
-	 * 
-	 */
-	public void getOwner() {
-	}
+    public Optional<Player> getOwner() {
+        return Optional.ofNullable(owner);
+    }
 
-	/**
-	 * 
-	 */
-	public void isClaimed() {
-	}
+    public boolean isClaimed() {
+        return owner != null;
+    }
 
-	/**
-	 * 
-	 * @param player 
-	 */
-	public void isOwnedby(Player player) {
-	}
+    public boolean isOwnedBy(Player player) {
+        return owner != null && owner.equals(player);
+    }
 
-	/**
-	 * 
-	 * @param player 
-	 */
-	public void claim(Player player) {
-	}
+    // Assigns the node to a player and places a settlement.
+    public void claim(Player player) {
+        Objects.requireNonNull(player, "player");
+        if (owner != null) {
+            throw new IllegalStateException("Node already claimed.");
+        }
+        owner = player;
+        building = Building.settlement(player);
+    }
 
-	/**
-	 * 
-	 */
-	public void getBuilding() {
-	}
+    public Building getBuilding() {
+        return building;
+    }
 
-	/**
-	 * 
-	 * @param player 
-	 */
-	public void upgradeToCity(Player player) {
-	}
+    // Upgrades the current settlement to a city.
+    public void upgradeToCity(Player player) {
+        Objects.requireNonNull(player, "player");
+        if (owner == null || !owner.equals(player)) {
+            throw new IllegalStateException("Node is not owned by the player.");
+        }
+        if (building.getType() == BuildingType.CITY) {
+            throw new IllegalStateException("Node is already a city.");
+        }
+        building = Building.city(player);
+    }
 }
