@@ -30,7 +30,7 @@ public class ActionDecision {
 	 * 
 	 */
 	public static ActionDecision None() {
-		return new ActionDecision();
+		return new ActionDecision(BuildAction.NONE, -1);
 	}
 
 	/**
