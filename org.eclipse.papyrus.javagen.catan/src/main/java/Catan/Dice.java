@@ -11,7 +11,11 @@ import java.util.Random;
  */
 public final class Dice {
     // Java's built-in random number generator
-    private final Random random = new Random();
+    private final Random random;
+
+	public Dice(){
+		random = new Random();
+	}
 
     /*
      * Generates a random number between 1 and 6.
