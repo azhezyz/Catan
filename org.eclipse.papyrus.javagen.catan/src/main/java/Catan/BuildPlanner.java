@@ -4,61 +4,106 @@
 
 package Catan;
 
-/************************************************************/
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 
+/*
+ * EN: BuildPlanner is a utility class for build decision enumeration.
+ * EN: It checks board legality and resource affordability.
+ * ZH: BuildPlanner 是用于建造决策枚举的工具类。
+ * ZH: 它同时检查棋盘规则合法性与资源可负担性。
  */
-public class BuildPlanner {
-	/**
-	 * 
-	 */
-	private static Map<ResourceType, Integer> SETTLEMENT_COST;
-	/**
-	 * 
-	 */
-	private static Map<ResourceType, Integer> ROAD_COST;
-	/**
-	 * 
-	 */
-	private static Map<ResourceType, Integer> CITY_COST;
+public final class BuildPlanner {
+	// EN: Standard Catan building costs.
+	// ZH: 标准卡坦建造消耗。
+	private static final Map<ResourceType, Integer> SETTLEMENT_COST = Map.of(
+			ResourceType.WOOD, 1,
+			ResourceType.BRICK, 1,
+			ResourceType.SHEEP, 1,
+			ResourceType.WHEAT, 1
+	);
+	private static final Map<ResourceType, Integer> ROAD_COST = Map.of(
+			ResourceType.WOOD, 1,
+			ResourceType.BRICK, 1
+	);
+	private static final Map<ResourceType, Integer> CITY_COST = Map.of(
+			ResourceType.WHEAT, 2,
+			ResourceType.ORE, 3
+	);
 
-	/**
-	 * 
-	 */
-	public BuildPlanner() {
+	// EN: Utility class, no instance needed.
+	// ZH: 工具类，不需要实例化。
+	private BuildPlanner() {
 	}
 
-	/**
-	 * 
-	 * @param board 
-	 * @param player 
+	/*
+	 * EN: Scan the board and return all legal + affordable actions.
+	 * EN: Order: city upgrades, settlements, roads.
+	 * ZH: 扫描棋盘并返回所有“合法且可负担”的动作。
+	 * ZH: 顺序：城市升级、定居点、道路。
 	 */
 	public static List<ActionDecision> availableActions(Board board, Player player) {
-        return List.of();
-    }
+		List<ActionDecision> actions = new ArrayList<>();
+		boolean canAffordCity = player.canAfford(CITY_COST);
+		boolean canAffordSettlement = player.canAfford(SETTLEMENT_COST);
+		boolean canAffordRoad = player.canAfford(ROAD_COST);
 
-	/**
-	 * 
+		// EN: City upgrade candidates.
+		// ZH: 城市升级候选。
+		if (canAffordCity) {
+			for (Node node : board.getNodes()) {
+				if (node.canUpgradeToCity(player)) {
+					actions.add(ActionDecision.city(node.getId()));
+				}
+			}
+		}
+
+		// EN: New settlement candidates.
+		// ZH: 新定居点候选。
+		if (canAffordSettlement) {
+			for (Node node : board.getNodes()) {
+				if (node.canBuildSettlement(board, player)) {
+					actions.add(ActionDecision.settlement(node.getId()));
+				}
+			}
+		}
+
+		// EN: Road candidates.
+		// ZH: 道路候选。
+		if (canAffordRoad) {
+			for (Path path : board.getPaths()) {
+				if (path.canBuildRoad(board, player)) {
+					actions.add(ActionDecision.road(path.getId()));
+				}
+			}
+		}
+		return actions;
+	}
+
+	/*
+	 * EN: Return the first available action, or NONE if no action exists.
+	 * ZH: 返回第一个可行动作；若无动作则返回 NONE。
 	 */
+	public static ActionDecision forcedDecision(Board board, Player player) {
+		List<ActionDecision> actions = availableActions(board, player);
+		if (actions.isEmpty()) {
+			return ActionDecision.none();
+		}
+		return actions.get(0);
+	}
+
+	// EN: Expose costs for engine/planner consistency.
+	// ZH: 对外暴露消耗，确保引擎与规划器使用同一规则。
 	public static Map<ResourceType, Integer> settlementCost() {
-        return Map.of();
-    }
+		return SETTLEMENT_COST;
+	}
 
-	/**
-	 * 
-	 */
 	public static Map<ResourceType, Integer> roadCost() {
-        return Map.of();
-    }
+		return ROAD_COST;
+	}
 
-	/**
-	 * 
-	 */
 	public static Map<ResourceType, Integer> cityCost() {
-        return Map.of();
-    }
+		return CITY_COST;
+	}
 }
