@@ -6,139 +6,237 @@ package Catan;
 
 /************************************************************/
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-/**
- * 
+/*
+ * EN: GameEngine is the central controller for the Catan simulation.
+ * EN: It manages dice rolls, resource distribution, and build execution.
+ * ZH: GameEngine 是卡坦模拟的核心控制器。
+ * ZH: 它负责掷骰、资源分发与建造执行。
  */
-public class GameEngine {
-	/**
-	 * 
-	 */
-	private Board board;
-	/**
-	 * 
-	 */
-	private List<Player> players;
-	/**
-	 * 
-	 */
-	private DiceSet diceSet;
-	/**
-	 * 
-	 */
-	private Player longestRoadHolder;
-	/**
-	 * 
-	 */
-	private int currentMaxRoadLength;
+public final class GameEngine {
+    private final Board board;
+    private final List<Player> players;
+    private final DiceSet diceSet;
 
-	/**
-	 * 
-	 * @param board 
-	 * @param players 
-	 */
-	public GameEngine(Board board, List<Player> players) {
-	}
+    // EN: Track Longest Road holder for the +2 VP bonus.
+    // ZH: 跟踪“最长路”持有者，用于 +2 胜利点奖励。
+    private Player longestRoadHolder = null;
+    // EN: Must exceed 4 to claim, i.e. at least length 5.
+    // ZH: 必须超过 4 才能获得，即长度至少为 5。
+    private int currentMaxRoadLength = 4;
 
-	/**
-	 * 
-	 */
-	public void rollDice() {
-	}
-
-	/**
-	 * 
-	 * @param rounds 
-	 */
-	public void runSimulation(int rounds) {
-	}
-
-	/**
-	 * 
-	 * @param roll 
-	 * @param log 
-	 * @param preferredActions 
-	 */
-	private void distributeResources(int roll, List<String> log, BuildAction preferredActions) {
-	}
-
-	/**
-	 * 
-	 * @param roll 
-	 * @param log 
-	 */
-	private void executeBuildPhase(int roll, List<String> log) {
-	}
-
-	/**
-	 * 
-	 * @param player 
-	 * @param action 
-	 * @param log 
-	 */
-	private void applyAction(Player player, ActionDecision action, List<String> log) {
-	}
-
-	/**
-	 * 
-	 * @param player 
-	 * @param log 
-	 * @param nodeId 
-	 */
-	private void buildCity(Player player, List<String> log, int nodeId) {
-	}
-
-	/**
-	 * 
-	 * @param nodeId 
-	 * @param log 
-	 * @param player 
-	 */
-	private void buildSettlement(int nodeId, List<String> log, Player player) {
-	}
-
-	/**
-	 * 
-	 * @param pathId 
-	 * @param log 
-	 * @param player 
-	 */
-	private void buildRoad(int pathId, List<String> log, Player player) {
-	}
-
-	/**
-	 * 
-	 * @param log 
-	 * @param player 
-	 */
-	private void updateLongestRoad(List<String> log, Player player) {
-	}
-
-	/**
-	 * 
-	 * @param rounds 
-	 * @param log 
-	 */
-	private void logRoundVictoryPoints(int rounds, List<String> log) {
-	}
-
-	/**
-	 * 
-	 * @param player 
-	 * @param path 
-	 */
-	private boolean isRoadConnectedToPlayerNetwork(Player player, Path path) {
-        return false;
+    /*
+     * EN: Create an engine with a fixed board and player order.
+     * ZH: 使用固定棋盘和玩家顺序创建引擎。
+     */
+    public GameEngine(Board board, List<Player> players) {
+        this.board = Objects.requireNonNull(board, "board");
+        this.players = List.copyOf(Objects.requireNonNull(players, "players"));
+        if (this.players.isEmpty()) {
+            throw new IllegalArgumentException("At least one player is required.");
+        }
+        this.diceSet = new DiceSet();
     }
 
-	/**
-	 * 
-	 * @param player 
-	 * @param path 
-	 * @param nodeId 
-	 */
-	private boolean canConnectAtNode(Player player, Path path, int nodeId) {
+    // EN: Roll two dice and return the sum.
+    // ZH: 掷两枚骰子并返回点数和。
+    public int rollDice() {
+        return diceSet.nextRoll();
+    }
+
+    /*
+     * EN: Main simulation loop.
+     * EN: Per round: roll -> distribute -> build -> VP check.
+     * ZH: 主模拟循环。
+     * ZH: 每回合流程：掷骰 -> 分发资源 -> 建造 -> 胜利点检查。
+     */
+    public SimulationReport runSimulation(int rounds) {
+        if (rounds <= 0) {
+            throw new IllegalArgumentException("Rounds must be positive.");
+        }
+        List<String> log = new ArrayList<>();
+        for (int round = 1; round <= rounds; round++) {
+            int roll = rollDice();
+            log.add(String.format("[Round %d] roll=%d", round, roll));
+            distributeResources(roll, log);
+
+            for (Player player : players) {
+                if (player.getTotalResourceCount() > 7){
+                    executeBuildPhase(player, log);
+                }
+
+                // EN: End immediately once a player reaches 10 VP.
+                // ZH: 任一玩家达到 10 分立即结束。
+                if (player.getVictoryPoints() >= 10) {
+                    logRoundVictoryPoints(round, log);
+                    log.add(String.format("!!! %s wins with %d VPs in round %d !!!", 
+                            player.getName(), player.getVictoryPoints(), round));
+                    return new SimulationReport(log, players);
+                }
+            }
+            logRoundVictoryPoints(round, log);
+            log.add("-- End of round --");
+        }
+        return new SimulationReport(log, players);
+    }
+
+    /*
+     * EN: Distribute resources for tiles matching the dice roll.
+     * EN: Settlement yields 1, city yields 2.
+     * ZH: 对与骰点匹配的地块进行资源分发。
+     * ZH: 定居点产出 1，城市产出 2。
+     */
+    private void distributeResources(int roll, List<String> log) {
+        for (Tile tile : board.tilesForRoll(roll)) {
+            ResourceType resourceType = tile.getResourceTypeOpt().orElse(null);
+            if (resourceType == null) {
+                continue;
+            }
+            for (int nodeId : tile.getAdjacentNodeIds()) {
+                Node node = board.getNode(nodeId);
+                node.getOwner().ifPresent(owner -> {
+                    int amount = node.getBuilding().productionYield();
+                    if (amount > 0) {
+                        owner.addResource(resourceType, amount);
+                        log.add(String.format("  %s gains %d %s from tile %d",
+                                owner.getName(), amount, resourceType, tile.getId()));
+                    }
+                });
+            }
+        }
+    }
+
+    private void executeBuildPhase(Player player, List<String> log) {
+        // EN: Prefer CITY/SETTLEMENT first, then ROAD.
+        // ZH: 优先尝试 城市/定居点，再尝试 道路。
+        executeFirstMatchingAction(player, log, BuildAction.CITY, BuildAction.SETTLEMENT);
+        executeFirstMatchingAction(player, log, BuildAction.ROAD);
+    }
+
+    private void executeFirstMatchingAction(Player player, List<String> log, BuildAction... preferredActions) {
+        // EN: Compute legal actions once, then pick by priority.
+        // ZH: 先计算可行动作，再按优先级选择。
+        List<ActionDecision> actions = BuildPlanner.availableActions(board, player);
+        for (BuildAction preferredAction : preferredActions) {
+            for (ActionDecision action : actions) {
+                if (action.getAction() == preferredAction) {
+                    applyAction(player, action, log);
+                    return;
+                }
+            }
+        }
+    }
+
+    private void applyAction(Player player, ActionDecision action, List<String> log) {
+        switch (action.getAction()) {
+            case CITY -> buildCity(player, action.getTargetId(), log);
+            case SETTLEMENT -> buildSettlement(player, action.getTargetId(), log);
+            case ROAD -> buildRoad(player, action.getTargetId(), log);
+            case NONE -> {
+                // no-op
+            }
+        }
+    }
+
+    private void buildCity(Player player, int nodeId, List<String> log) {
+        // EN: Upgrade only if node ownership and cost are valid.
+        // ZH: 仅在节点归属与资源成本都满足时升级城市。
+        Node node = board.getNode(nodeId);
+        if (!node.canUpgradeToCity(player) || !player.canAfford(BuildPlanner.cityCost())) {
+            return;
+        }
+        node.upgradeToCity(player);
+        player.spend(BuildPlanner.cityCost());
+        player.addCity(nodeId);
+        log.add(String.format("  %s upgrades settlement to city on node %d", player.getName(), nodeId));
+    }
+
+    private void buildSettlement(Player player, int nodeId, List<String> log) {
+        // EN: Re-validate legality to keep engine safe.
+        // ZH: 再次校验合法性，保证引擎执行安全。
+        Node node = board.getNode(nodeId);
+        if (!node.canBuildSettlement(board, player) || !player.canAfford(BuildPlanner.settlementCost())) {
+            return;
+        }
+        node.claim(player);
+        player.spend(BuildPlanner.settlementCost());
+        player.addSettlement(nodeId);
+        log.add(String.format("  %s builds settlement on node %d", player.getName(), nodeId));
+    }
+
+    private void buildRoad(Player player, int pathId, List<String> log) {
+        // EN: Require legal placement, network connectivity, and enough resources.
+        // ZH: 同时要求 放置合法、网络连通、资源充足。
+        Path path = board.getPath(pathId);
+        if (!path.canBuildRoad(board, player)
+                || !isRoadConnectedToPlayerNetwork(player, path)
+                || !player.canAfford(BuildPlanner.roadCost())) {
+            return;
+        }
+        path.claim(player);
+        player.spend(BuildPlanner.roadCost());
+        player.addRoad(pathId);
+        log.add(String.format("  %s builds road on path %d", player.getName(), pathId));
+        updateLongestRoad(player, log);
+    }
+
+    private void updateLongestRoad(Player player, List<String> log) {
+        // EN: Title changes only when current length strictly exceeds previous max.
+        // ZH: 只有当长度严格超过历史最大值时才会易主。
+        int newLen = player.calculateLongestRoad(board);
+        if (newLen <= currentMaxRoadLength) {
+            return;
+        }
+        if (longestRoadHolder != null && !longestRoadHolder.equals(player)) {
+            longestRoadHolder.setHasLongestRoad(false);
+            log.add(String.format("  %s takes Longest Road from %s!", player.getName(), longestRoadHolder.getName()));
+        }
+        player.setHasLongestRoad(true);
+        longestRoadHolder = player;
+        currentMaxRoadLength = newLen;
+        log.add(String.format("  %s now has Longest Road (Length: %d)", player.getName(), newLen));
+    }
+
+    private void logRoundVictoryPoints(int round, List<String> log) {
+        // EN: Snapshot each player's VP at the end of a round.
+        // ZH: 在每轮结束时记录所有玩家的 VP 快照。
+        StringBuilder line = new StringBuilder();
+        line.append("[Round ").append(round).append(" VP] ");
+        for (int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            if (i > 0) {
+                line.append(" | ");
+            }
+            line.append(player.getName()).append("=").append(player.getVictoryPoints());
+        }
+        log.add(line.toString());
+    }
+
+    private boolean isRoadConnectedToPlayerNetwork(Player player, Path path) {
+        // EN: A road is connected if either endpoint can connect to the player's network.
+        // ZH: 只要任一端点能接入玩家网络，就视为连通。
+        return canConnectAtNode(player, path, path.getNodeAId())
+                || canConnectAtNode(player, path, path.getNodeBId());
+    }
+
+    private boolean canConnectAtNode(Player player, Path candidate, int nodeId) {
+        // EN: Opponent-owned node blocks extension through that node.
+        // ZH: 若端点被对手占据，则不能通过该端点延展道路。
+        Node node = board.getNode(nodeId);
+        if (node.isOwnedBy(player)) {
+            return true;
+        }
+        if (node.isClaimed() && !node.isOwnedBy(player)) {
+            return false;
+        }
+        for (Path adjacent : board.pathsAdjacentToNode(nodeId)) {
+            if (adjacent != candidate && adjacent.isOwnedBy(player)) {
+                return true;
+            }
+        }
         return false;
     }
 }
