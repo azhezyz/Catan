@@ -5,7 +5,6 @@
 package Catan;
 
 import java.util.List;
-import java.util.List;
 import java.util.Set;
 
 /**
