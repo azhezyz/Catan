@@ -4,15 +4,346 @@
 
 package Catan;
 
-/************************************************************/
+import java.util.List;
+import java.util.List;
+import java.util.Set;
+
 /**
- * 
+ * Full standard Catan board demonstration with 4 players.
+ *
+ * Board layout follows the canonical hex numbering:
+ *   - Tile 0:     center tile
+ *   - Tiles 1–6:  inner ring, numbered clockwise
+ *   - Tiles 7–18: outer ring, numbered clockwise
+ *   - 54 nodes  (Node IDs 1–54)
+ *   - 72 paths  (Path IDs 1–72)
+ *   - 4 players, each with 2 initial settlements and 2 initial roads
+ *
+ * Visual layout (row by row, left to right):
+ *
+ *   Row 1:           [13]       [14]       [15]
+ *   Row 2:      [12]       [4]        [5]        [16]
+ *   Row 3: [11]       [3]        [0]        [6]        [17]
+ *   Row 4:      [10]       [2]        [1]        [18]
+ *   Row 5:           [9]        [8]        [7]
  */
-public class Demonstrator {
-	/**
-	 * 
-	 */
+public final class Demonstrator {
+
+	public static void main(String[] args) {
+		Board board = buildFullBoard();
+		Player alice   = new Player("Alice");
+		Player bob     = new Player("Bob");
+		Player charlie = new Player("Charlie");
+		Player diana   = new Player("Diana");
+
+		seedInitialState(board, alice, bob, charlie, diana);
+
+		// A sample dice sequence covering common numbers
+		GameEngine engine = new GameEngine(board, List.of(alice, bob, charlie, diana));
+		SimulationReport report = engine.runSimulation(100);
+
+		for (String line : report.getLogLines()) {
+			System.out.println(line);
+		}
+		System.out.println(report.summarize());
+	}
+
+	// ══════════════════════════ Board Construction ══════════════════════════
+
 	private static Board buildFullBoard() {
-        return null;
-    }
+
+		// ── 19 Tiles ──────────────────────────────────────────────────────
+		//
+		// Tile 0  (center):  WOOD, 10
+		// Inner ring 1–6 (clockwise from bottom-right):
+		//   1=WHEAT/11  2=BRICK/8  3=ORE/3  4=SHEEP/11  5=SHEEP/5  6=SHEEP/12
+		// Outer ring 7–18 (clockwise from bottom):
+		//   7=WHEAT/3  8=ORE/6  9=WOOD/4  10=ORE/6  11=WHEAT/9
+		//   12=WOOD/5  13=BRICK/9  14=BRICK/8  15=WHEAT/4  16=DESERT
+		//   17=WOOD/2  18=SHEEP/10
+		//
+		// Each tile lists its 6 adjacent node IDs.
+
+		// Row 1 (top 3 tiles): 13, 14, 15
+		Tile t13 = new Tile(13, ResourceType.BRICK,  9, Set.of(17, 18, 39, 40, 41, 42));
+		Tile t14 = new Tile(14, ResourceType.BRICK,  8, Set.of(16, 18, 21, 40, 43, 44));
+		Tile t15 = new Tile(15, ResourceType.WHEAT,  4, Set.of(19, 21, 43, 45, 46, 47));
+
+		// Row 2 (4 tiles): 12, 4, 5, 16
+		Tile t12 = new Tile(12, ResourceType.WOOD,   5, Set.of(14, 15, 17, 37, 38, 39));
+		Tile t4  = new Tile( 4, ResourceType.SHEEP, 11, Set.of(4, 5, 15, 16, 17, 18));
+		Tile t5  = new Tile( 5, ResourceType.SHEEP,  5, Set.of(0, 5, 16, 19, 20, 21));
+		Tile t16 = new Tile(16, null,                0, Set.of(19, 20, 22, 46, 48, 49));
+
+		// Row 3 (middle 5 tiles): 11, 3, 0, 6, 17
+		Tile t11 = new Tile(11, ResourceType.WHEAT,  9, Set.of(13, 14, 34, 35, 36, 37));
+		Tile t3  = new Tile( 3, ResourceType.ORE,    3, Set.of(3, 4, 12, 13, 14, 15));
+		Tile t0  = new Tile( 0, ResourceType.WOOD,  10, Set.of(0, 1, 2, 3, 4, 5));
+		Tile t6  = new Tile( 6, ResourceType.SHEEP, 12, Set.of(0, 1, 6, 23, 22, 20));
+		Tile t17 = new Tile(17, ResourceType.WOOD,   2, Set.of(22, 23, 49, 50, 51, 52));
+
+		// Row 4 (4 tiles): 10, 2, 1, 18
+		Tile t10 = new Tile(10, ResourceType.ORE,    6, Set.of(11, 12, 13, 32, 33, 34));
+		Tile t2  = new Tile( 2, ResourceType.BRICK,  8, Set.of(2, 3, 9, 10, 11, 12));
+		Tile t1  = new Tile( 1, ResourceType.WHEAT, 11, Set.of(1, 2, 6, 7, 8, 9));
+		Tile t18 = new Tile(18, ResourceType.SHEEP, 10, Set.of(6, 7, 23, 24, 52, 53));
+
+		// Row 5 (bottom 3 tiles): 9, 8, 7
+		Tile t9  = new Tile( 9, ResourceType.WOOD,   4, Set.of(10, 11, 29, 30, 31, 32));
+		Tile t8  = new Tile( 8, ResourceType.ORE,    6, Set.of(8, 9, 10, 27, 28, 29));
+		Tile t7  = new Tile( 7, ResourceType.WHEAT,  3, Set.of(7, 24, 8, 25, 26, 27));
+
+		List<Tile> tiles = List.of(
+				t0, t1, t2, t3, t4, t5, t6, t7, t8, t9,
+				t10, t11, t12, t13, t14, t15, t16, t17, t18
+		);
+
+		// ── 54 Nodes ──────────────────────────────────────────────────────
+		// Each node references the tile IDs it touches.
+		//
+		// Node numbering from the right-side image "Node Id Order":
+		//   Row A (top):      1  2 |  3  4 |  5  6 |  7  8
+		//   Row B:         9 10 | 11 12 | 13 14 | 15 16 | 17
+		//   Row C:      18 19 | 20 21 | 22 23 | 24 25 | 26
+		//   Row D:         27 28 | 29 30 | 31 32 | 33 34 | 35 36 | 37
+		//   Row E:      38 39 | 40 41 | 42 43 | 44 45 | 46
+		//   Row F:         47 48 | 49 50 | 51 52
+		//   (nodes 53, 54 are the final bottom corners if present)
+
+		Node n0  = new Node( 0, Set.of(0, 5, 6),          Set.of(1, 5, 20));
+		Node n1  = new Node( 1, Set.of(0, 1, 6),          Set.of(0, 2, 6));
+		Node n2  = new Node( 2, Set.of(0, 1, 2),          Set.of(1, 3, 9));
+		Node n3  = new Node( 3, Set.of(0, 2, 3),          Set.of(2, 4, 12));
+		Node n4  = new Node( 4, Set.of(0, 3, 4),          Set.of(3, 5, 15));
+		Node n5  = new Node( 5, Set.of(0, 4, 5),          Set.of(0, 4, 16));
+
+		// Inner ring outer vertices
+		Node n6  = new Node( 6, Set.of(1, 6, 18),         Set.of(1, 7, 23));
+		Node n7  = new Node( 7, Set.of(1, 7, 18),         Set.of(6, 8, 24));
+		Node n8  = new Node( 8, Set.of(1, 7, 8),          Set.of(7, 9, 27));
+		Node n9  = new Node( 9, Set.of(1, 2, 8),          Set.of(2, 8, 10));
+		Node n10 = new Node(10, Set.of(2, 8, 9),          Set.of(9, 11, 29));
+		Node n11 = new Node(11, Set.of(2, 9, 10),         Set.of(10, 12, 32));
+		Node n12 = new Node(12, Set.of(2, 3, 10),         Set.of(3, 11, 13));
+		Node n13 = new Node(13, Set.of(3, 10, 11),        Set.of(12, 14, 34));
+		Node n14 = new Node(14, Set.of(3, 11, 12),        Set.of(13, 15, 37));
+		Node n15 = new Node(15, Set.of(3, 4, 12),         Set.of(4, 14, 17));
+		Node n16 = new Node(16, Set.of(4, 5, 14),         Set.of(5, 18, 21));
+		Node n17 = new Node(17, Set.of(4, 12, 13),        Set.of(15, 18, 39));
+		Node n18 = new Node(18, Set.of(4, 13, 14),        Set.of(16, 17, 42));
+
+		// Tile 5/6/16/17 outer vertices
+		Node n19 = new Node(19, Set.of(5, 15, 16),        Set.of(20, 21, 46));
+		Node n20 = new Node(20, Set.of(5, 6, 16),         Set.of(0, 19, 22));
+		Node n21 = new Node(21, Set.of(5, 14, 15),        Set.of(16, 19, 43));
+		Node n22 = new Node(22, Set.of(6, 16, 17),        Set.of(20, 23, 49));
+		Node n23 = new Node(23, Set.of(6, 17, 18),        Set.of(6, 22, 52));
+		Node n24 = new Node(24, Set.of(7, 18),            Set.of(7, 25, 53));
+		Node n25 = new Node(25, Set.of(7),                Set.of(24, 26));
+		Node n26 = new Node(26, Set.of(7),                Set.of(25, 27));
+		Node n27 = new Node(27, Set.of(7, 8),             Set.of(8, 26, 28));
+		Node n28 = new Node(28, Set.of(8),                Set.of(27, 29));
+		Node n29 = new Node(29, Set.of(8, 9),             Set.of(10, 28, 30));
+		Node n30 = new Node(30, Set.of(9),                Set.of(29, 31));
+		Node n31 = new Node(31, Set.of(9),                Set.of(30, 32));
+		Node n32 = new Node(32, Set.of(9, 10),            Set.of(11, 31, 33));
+		Node n33 = new Node(33, Set.of(10),               Set.of(32, 34));
+		Node n34 = new Node(34, Set.of(10, 11),           Set.of(13, 33, 35));
+		Node n35 = new Node(35, Set.of(11),               Set.of(34, 36));
+		Node n36 = new Node(36, Set.of(11),               Set.of(35, 37));
+		Node n37 = new Node(37, Set.of(11, 12),           Set.of(14, 36, 38));
+		Node n38 = new Node(38, Set.of(12),               Set.of(37, 39));
+		Node n39 = new Node(39, Set.of(12, 13),           Set.of(17, 38, 40));
+		Node n40 = new Node(40, Set.of(13),               Set.of(39, 41));
+		Node n41 = new Node(41, Set.of(13),               Set.of(40, 42));
+		Node n42 = new Node(42, Set.of(13, 14),           Set.of(18, 41, 43));
+		Node n43 = new Node(43, Set.of(14, 15),           Set.of(21, 42, 44));
+		Node n44 = new Node(44, Set.of(14),               Set.of(43, 45));
+		Node n45 = new Node(45, Set.of(15),               Set.of(44, 46));
+		Node n46 = new Node(46, Set.of(15, 16),           Set.of(19, 45, 48));
+		Node n47 = new Node(47, Set.of(15),               Set.of(46, 48));
+		Node n48 = new Node(48, Set.of(16),               Set.of(46, 47, 49));
+		Node n49 = new Node(49, Set.of(16, 17),           Set.of(22, 48, 50));
+		Node n50 = new Node(50, Set.of(17),               Set.of(49, 51));
+		Node n51 = new Node(51, Set.of(17),               Set.of(50, 52));
+		Node n52 = new Node(52, Set.of(17, 18),           Set.of(23, 51, 53));
+		Node n53 = new Node(53, Set.of(18),               Set.of(24, 52));
+
+		List<Node> nodes = List.of(
+				n0, n1, n2, n3, n4, n5, n6, n7, n8, n9,
+				n10, n11, n12, n13, n14, n15, n16, n17, n18, n19,
+				n20, n21, n22, n23, n24, n25, n26, n27, n28, n29,
+				n30, n31, n32, n33, n34, n35, n36, n37, n38, n39,
+				n40, n41, n42, n43, n44, n45, n46, n47, n48, n49,
+				n50, n51, n52, n53
+		);
+
+
+		// ── 72 Paths ─────────────────────────────────────────────────────
+		// Derived from Node adjacentNodeIds. Each path connects two
+		// neighboring nodes (sharing a hex edge).
+		//
+		// Organized by concentric rings outward from center.
+
+		List<Path> paths = List.of(
+				// ── Tile 0 (center hex) inner edges ──
+				new Path( 0,  0,  1),   // Tile 0 edge
+				new Path( 1,  1,  2),   // Tile 0 edge
+				new Path( 2,  2,  3),   // Tile 0 edge
+				new Path( 3,  3,  4),   // Tile 0 edge
+				new Path( 4,  4,  5),   // Tile 0 edge
+				new Path( 5,  0,  5),   // Tile 0 edge
+
+				// ── Inner ring radial spokes (center → inner ring outer) ──
+				new Path( 6,  0, 20),   // Tile 0/5/6 junction
+				new Path( 7,  1,  6),   // Tile 0/1/6 junction
+				new Path( 8,  2,  9),   // Tile 0/1/2 junction
+				new Path( 9,  3, 12),   // Tile 0/2/3 junction
+				new Path(10,  4, 15),   // Tile 0/3/4 junction
+				new Path(11,  5, 16),   // Tile 0/4/5 junction
+
+				// ── Inner ring outer edges (Tiles 1–6 outer sides) ──
+				new Path(12,  6,  7),   // Tile 1/18 edge
+				new Path(13,  7,  8),   // Tile 1/7 edge
+				new Path(14,  8,  9),   // Tile 1/8 edge
+				new Path(15,  9, 10),   // Tile 2/8 edge
+				new Path(16, 10, 11),   // Tile 2/9 edge
+				new Path(17, 11, 12),   // Tile 2/10 edge
+				new Path(18, 12, 13),   // Tile 3/10 edge
+				new Path(19, 13, 14),   // Tile 3/11 edge
+				new Path(20, 14, 15),   // Tile 3/12 edge
+				new Path(21, 15, 17),   // Tile 4/12 edge
+				new Path(22, 16, 18),   // Tile 4/14 edge
+				new Path(23, 16, 21),   // Tile 5/14 edge
+				new Path(24, 17, 18),   // Tile 4/13 edge
+				new Path(25, 17, 39),   // Tile 12/13 edge
+				new Path(26, 18, 42),   // Tile 13/14 edge
+				new Path(27, 19, 20),   // Tile 5/16 edge
+				new Path(28, 19, 21),   // Tile 5/15 edge
+				new Path(29, 19, 46),   // Tile 15/16 edge
+				new Path(30, 20, 22),   // Tile 6/16 edge
+				new Path(31,  6, 23),   // Tile 6/18 edge
+				new Path(32, 21, 43),   // Tile 14/15 edge
+				new Path(33, 22, 23),   // Tile 6/17 edge
+				new Path(34, 22, 49),   // Tile 16/17 edge
+				new Path(35, 23, 52),   // Tile 17/18 edge
+
+				// ── Outer ring radial spokes (inner ring → outer ring) ──
+				new Path(36,  7, 24),   // Tile 7/18 edge
+				new Path(37,  8, 27),   // Tile 7/8 edge
+				new Path(38, 10, 29),   // Tile 8/9 edge
+				new Path(39, 11, 32),   // Tile 9/10 edge
+				new Path(40, 13, 34),   // Tile 10/11 edge
+				new Path(41, 14, 37),   // Tile 11/12 edge
+
+				// ── Outer ring edges (Tiles 7–18 perimeter) ──
+				// Bottom: Tiles 7, 8, 9
+				new Path(42, 24, 25),   // Tile 7 bottom-right
+				new Path(43, 25, 26),   // Tile 7 bottom
+				new Path(44, 26, 27),   // Tile 7/8 shared
+				new Path(45, 27, 28),   // Tile 8 bottom
+				new Path(46, 28, 29),   // Tile 8/9 shared
+				new Path(47, 29, 30),   // Tile 9 bottom
+				new Path(48, 30, 31),   // Tile 9 bottom
+				new Path(49, 31, 32),   // Tile 9/10 shared
+
+				// Left: Tiles 10, 11, 12
+				new Path(50, 32, 33),   // Tile 10 left
+				new Path(51, 33, 34),   // Tile 10/11 shared
+				new Path(52, 34, 35),   // Tile 11 left
+				new Path(53, 35, 36),   // Tile 11 bottom
+				new Path(54, 36, 37),   // Tile 11/12 shared
+				new Path(55, 37, 38),   // Tile 12 left
+				new Path(56, 38, 39),   // Tile 12/13 shared
+
+				// Top: Tiles 13, 14, 15
+				new Path(57, 39, 40),   // Tile 13 top-left
+				new Path(58, 40, 41),   // Tile 13 top
+				new Path(59, 41, 42),   // Tile 13/14 shared
+				new Path(60, 42, 43),   // Tile 14 top
+				new Path(61, 43, 44),   // Tile 14/15 shared
+				new Path(62, 44, 45),   // Tile 15 top
+				new Path(63, 45, 46),   // Tile 15/16 shared
+
+				// Right: Tiles 16, 17, 18
+				new Path(64, 46, 48),   // Tile 16 right (skip 47, node 47=46 perimeter)
+				new Path(65, 47, 48),   // Tile 16 bottom
+				new Path(66, 48, 49),   // Tile 16/17 shared
+				new Path(67, 49, 50),   // Tile 17 right
+				new Path(68, 50, 51),   // Tile 17 bottom
+				new Path(69, 51, 52),   // Tile 17/18 shared
+				new Path(70, 52, 53),   // Tile 18 right
+				new Path(71, 24, 53)    // Tile 18 bottom (closes loop)
+		);
+
+
+		return new Board(tiles, nodes, paths);
+	}
+
+	// ══════════════════════════ Initial Placement ══════════════════════════
+
+	/**
+	 * Each of the 4 players receives 2 settlements and 2 roads,
+	 * spread across the board for a balanced start.
+	 *
+	 * Placement strategy — each player gets one settlement near the
+	 * productive center and one on the periphery:
+	 *
+	 *   Alice:   node 20 (Tile 3/4/11/12 junction)  + node 43 (Tile 1/7/8 junction)
+	 *   Bob:     node 13 (Tile 4/5/15 junction)      + node 41 (Tile 2/8/9 junction)
+	 *   Charlie: node 31 (Tile 0/2/3 junction)        + node 36 (Tile 17/18 junction)
+	 *   Diana:   node 24 (Tile 0/5/6/16 junction)     + node 48 (Tile 8/9 junction)
+	 */
+	private static void seedInitialState(Board board, Player alice, Player bob,
+										 Player charlie, Player diana) {
+		// Alice: settlements at nodes 20, 43
+		claimSettlement(board, alice, 20);
+		claimRoad(board, alice, 27);        // path 27: node 19–20
+
+		claimSettlement(board, alice, 43);
+		claimRoad(board, alice, 60);        // path 60: node 42–43
+
+		// Bob: settlements at nodes 13, 10
+		claimSettlement(board, bob, 13);
+		claimRoad(board, bob, 18);          // path 18: node 12–13
+
+		claimSettlement(board, bob, 10);
+		claimRoad(board, bob, 15);          // path 15: node 9–10
+
+		// Charlie: settlements at nodes 4, 36
+		claimSettlement(board, charlie, 4);
+		claimRoad(board, charlie, 3);       // path  3: node 3–4
+
+		claimSettlement(board, charlie, 36);
+		claimRoad(board, charlie, 53);      // path 53: node 35–36
+
+		// Diana: settlements at nodes 22, 48
+		claimSettlement(board, diana, 22);
+		claimRoad(board, diana, 30);        // path 30: node 20–22
+
+		claimSettlement(board, diana, 48);
+		claimRoad(board, diana, 66);        // path 66: node 48–49
+
+		// Starting resources for each player
+		for (Player p : List.of(alice, bob, charlie, diana)) {
+			p.addResource(ResourceType.WOOD, 1);
+			p.addResource(ResourceType.BRICK, 1);
+			p.addResource(ResourceType.SHEEP, 1);
+			p.addResource(ResourceType.WHEAT, 1);
+		}
+	}
+
+	// ══════════════════════════ Helpers ══════════════════════════════════
+
+	private static void claimSettlement(Board board, Player player, int nodeId) {
+		Node node = board.getNode(nodeId);
+		node.claim(player);
+		player.addSettlement(nodeId);
+	}
+
+	private static void claimRoad(Board board, Player player, int pathId) {
+		Path path = board.getPath(pathId);
+		path.claim(player);
+		player.addRoad(pathId);
+	}
 }
