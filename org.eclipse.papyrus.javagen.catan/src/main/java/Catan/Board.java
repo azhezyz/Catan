@@ -6,116 +6,159 @@ package Catan;
 
 /************************************************************/
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-/**
- * 
+/*
+ * The Board class acts as a data container for the entire Catan map.
+ * It stores every Tile, Node, and Path and organizes them into Maps (tilesById, etc.) 
+ * so we can find any component instantly using its unique ID instead of searching through lists.
  */
-public class Board {
-	/**
-	 * 
-	 */
-	private Map<Integer, Tile> tilesById;
-	/**
-	 * 
-	 */
-	private Map<Integer, Node> nodesById;
-	/**
-	 * 
-	 */
-	private Map<Integer, Path> pathsById;
-	/**
-	 * 
-	 */
-	private Map<Integer, List<Path>> pathsByNodeId;
-	/**
-	 * 
-	 */
-	private List<Tile> tiles;
-	/**
-	 * 
-	 */
-	private List<Node> ndoes;
-	/**
-	 * 
-	 */
-	private List<Path> paths;
-	/**
-	 * 
-	 */
-	public Node[] node;
+public final class Board {
+    // These maps allow us to look up components in O(1) time (constant time)
+    private final Map<Integer, Tile> tilesById;
+    private final Map<Integer, Node> nodesById;
+    private final Map<Integer, Path> pathsById;
+    private final List<Tile> tiles;
+    private final List<Node> nodes;
+    private final List<Path> paths;
+    private final Map<Integer, List<Path>> pathsByNodeId;
 
-	/**
-	 * 
-	 */
-	public Board(List<Tile> tiles, List<Node> nodes, List<Path> paths) {
-	}
+    /*
+     * The constructor takes lists of all components and organizes them.
+     * It also runs a validation check to make sure the board is "legal" 
+     * (e.g., no tile points to a node ID that doesn't exist).
+     */
+    public Board(List<Tile> tiles, List<Node> nodes, List<Path> paths) {
+        Objects.requireNonNull(tiles, "tiles");
+        Objects.requireNonNull(nodes, "nodes");
+        Objects.requireNonNull(paths, "paths");
+        
+        // Indexing converts the lists into searchable maps
+        this.tilesById = indexById(tiles, "tile");
+        this.nodesById = indexById(nodes, "node");
+        this.pathsById = indexById(paths, "path");
+        
+        // Ensure the connections between tiles/nodes/paths are valid
+        validateAdjacency();
 
-	/**
-	 * 
-	 */
-	public void indexById() {
-	}
-
-	/**
-	 * 
-	 */
-	public void buildPathAdjacency() {
+        this.tiles = Collections.unmodifiableList(new ArrayList<>(tilesById.values()));
+        this.nodes = Collections.unmodifiableList(new ArrayList<>(nodesById.values()));
+        this.paths = Collections.unmodifiableList(new ArrayList<>(pathsById.values()));
+        this.pathsByNodeId = buildPathAdjacency();
     }
 
-	/**
-	 * 
-	 */
-	public void validateAdjacency() {
-	}
-
-	/**
-	 * 
-	 */
-	public List<Tile> getTiles() {
-        return List.of();
+    /*
+     * A helper method that takes a list of items and puts them into a Map 
+     * keyed by their ID. It also checks for duplicate IDs to prevent bugs.
+     */
+    private static <T extends Identifiable> Map<Integer, T> indexById(List<T> items, String label) {
+        Map<Integer, T> map = new LinkedHashMap<>();
+        for (T item : items) {
+            int id = item.getId();
+            if (map.put(id, item) != null) {
+                throw new IllegalArgumentException("Duplicate " + label + " id " + id);
+            }
+        }
+        if (map.isEmpty()) {
+            throw new IllegalArgumentException("Board must include at least one " + label + ".");
+        }
+        return map;
     }
 
-	/**
-	 * 
-	 */
-	public List<Node> getNodes() {
-        return List.of();
+    private Map<Integer, List<Path>> buildPathAdjacency() {
+        Map<Integer, List<Path>> adjacency = new HashMap<>();
+        for (Path path : pathsById.values()) {
+            adjacency.computeIfAbsent(path.getNodeAId(), ignored -> new ArrayList<>()).add(path);
+            adjacency.computeIfAbsent(path.getNodeBId(), ignored -> new ArrayList<>()).add(path);
+        }
+        for (Map.Entry<Integer, List<Path>> entry : adjacency.entrySet()) {
+            entry.setValue(Collections.unmodifiableList(entry.getValue()));
+        }
+        return Collections.unmodifiableMap(adjacency);
     }
 
-	/**
-	 * 
-	 */
-	public List<Path> getPaths() {
-        return List.of();
+    /*
+     * Safety check to ensure all IDs referenced in Tiles, Nodes, or Paths 
+     * actually exist on this board. This prevents "NullPointerExceptions" during the game.
+     */
+    private void validateAdjacency() {
+        for (Tile tile : tilesById.values()) {
+            for (int nodeId : tile.getAdjacentNodeIds()) {
+                if (!nodesById.containsKey(nodeId)) {
+                    throw new IllegalArgumentException("Tile " + tile.getId() + " references missing node " + nodeId);
+                }
+            }
+        }
+        for (Node node : nodesById.values()) {
+            for (int tileId : node.getAdjacentTileIds()) {
+                if (!tilesById.containsKey(tileId)) {
+                    throw new IllegalArgumentException("Node " + node.getId() + " references missing tile " + tileId);
+                }
+            }
+        }
+        for (Path path : pathsById.values()) {
+            if (!nodesById.containsKey(path.getNodeAId()) || !nodesById.containsKey(path.getNodeBId())) {
+                throw new IllegalArgumentException("Path " + path.getId() + " references missing node.");
+            }
+        }
     }
 
-	/**
-	 * 
-	 */
-	public Node getNode() {
-        return null;
+    // Returns a copy of all tiles on the board
+    public List<Tile> getTiles() {
+        return tiles;
     }
 
-	/**
-	 * 
-	 */
-	public Path getPath() {
-        return null;
+    // Returns a copy of all nodes (intersections) on the board
+    public List<Node> getNodes() {
+        return nodes;
     }
 
-	/**
-	 * 
-	 */
-	public List<Path> pathsAdjacentToNode() {
-        return List.of();
+    // Returns a copy of all paths (edges) on the board
+    public List<Path> getPaths() {
+        return paths;
     }
 
-	/**
-	 * 
-	 */
-	public List<Tile> tilesForRoll() {
-        return List.of();
+    // Quickly find a specific node by its ID
+    public Node getNode(int nodeId) {
+        Node node = nodesById.get(nodeId);
+        if (node == null) {
+            throw new IllegalArgumentException("Unknown node id: " + nodeId);
+        }
+        return node;
+    }
+
+    // Quickly find a specific path by its ID
+    public Path getPath(int pathId) {
+        Path path = pathsById.get(pathId);
+        if (path == null) {
+            throw new IllegalArgumentException("Unknown path id: " + pathId);
+        }
+        return path;
+    }
+
+    public List<Path> pathsAdjacentToNode(int nodeId) {
+        // Validate first for clearer error on unknown nodes.
+        getNode(nodeId);
+        return pathsByNodeId.getOrDefault(nodeId, List.of());
+    }
+
+    /*
+     * Finds all tiles that have a specific number token.
+     * Used when the dice are rolled to see which hexes produce resources.
+     */
+    public List<Tile> tilesForRoll(int roll) {
+        List<Tile> matches = new ArrayList<>();
+        for (Tile tile : tilesById.values()) {
+            if (tile.getNumberToken() == roll) {
+                matches.add(tile);
+            }
+        }
+        return matches;
     }
 }
