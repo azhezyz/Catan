@@ -4,79 +4,101 @@
 
 package Catan;
 
-/************************************************************/
-/**
- * 
+import java.util.Objects;
+import java.util.Optional;
+
+/*
+ * Represents a "Path" (an edge) between two nodes.
+ * Paths are where roads are built.
  */
-public class Path {
-	/**
-	 * 
-	 */
-	private int id;
-	/**
-	 * 
-	 */
-	private Node nodeA;
-	/**
-	 * 
-	 */
-	private Node nodeB;
-	/**
-	 * 
-	 */
-	private Player owner;
+public final class Path implements Identifiable {
+    private final int id;
+    private final int nodeAId; // First end of the road
+    private final int nodeBId; // Second end of the road
+    private Player owner;
 
-	/**
-	 * 
-	 */
-	public Path(int id, int nodeAId, int nodeBId) {
-	}
-
-	/**
-	 * 
-	 */
-	public int getId() {
-        return 0;
+    public Path(int id, int nodeAId, int nodeBId) {
+        if (id < 0) {
+            throw new IllegalArgumentException("Path id must be positive.");
+        }
+        if (nodeAId < 0 || nodeBId < 0 || nodeAId == nodeBId) {
+            throw new IllegalArgumentException("Path must connect two distinct node ids.");
+        }
+        this.id = id;
+        this.nodeAId = nodeAId;
+        this.nodeBId = nodeBId;
     }
 
-	/**
-	 * 
-	 */
-	public int getNodeAId() {
-        return 0;
+    public int getId() {
+        return id;
     }
 
-	/**
-	 * 
-	 */
-	public int getNodeBId() {
-        return 0;
+    public int getNodeAId() {
+        return nodeAId;
     }
 
-	/**
-	 * 
-	 */
-	public boolean isOwnedBy() {
+    public int getNodeBId() {
+        return nodeBId;
+    }
+
+    public Optional<Player> getOwner() {
+        return Optional.ofNullable(owner);
+    }
+
+    public boolean isClaimed() {
+        return owner != null;
+    }
+
+    public boolean isOwnedBy(Player player) {
+        return owner != null && owner.equals(player);
+    }
+
+    public void claim(Player player) {
+        Objects.requireNonNull(player, "player");
+        if (owner != null) {
+            throw new IllegalStateException("Path already claimed.");
+        }
+        owner = player;
+    }
+
+    // Checks if this path touches a specific node ID.
+    public boolean isAdjacentToNode(int nodeId) {
+        return nodeAId == nodeId || nodeBId == nodeId;
+    }
+
+    /*
+     * Road Building Rules:
+     * 1. The path must be empty.
+     * 2. It must touch a building owned by the player OR another road owned by the player.
+     */
+    public boolean canBuildRoad(Board board, Player player) {
+        if (owner != null) {
+            return false;
+        }
+        // Touch building check
+        Node nodeA = board.getNode(nodeAId);
+        Node nodeB = board.getNode(nodeBId);
+        if (nodeA.isOwnedBy(player) || nodeB.isOwnedBy(player)) {
+            return true;
+        }
+        // Touch existing road check
+        if (canExtendFromNode(board, player, nodeAId) || canExtendFromNode(board, player, nodeBId)) {
+            return true;
+        }
         return false;
     }
 
-	/**
-	 * 
-	 */
-	public void claim(Player player) {
-	}
-
-	/**
-	 *
-	 */
-	public boolean canBuildRoad(Board board, Player player) {
+    private boolean canExtendFromNode(Board board, Player player, int nodeId) {
+        Node node = board.getNode(nodeId);
+        if (node.isClaimed() && !node.isOwnedBy(player)) {
+            return false;
+        }
+        for (Path other : board.pathsAdjacentToNode(nodeId)) {
+            if (other != this && other.isOwnedBy(player)) {
+                return true;
+            }
+        }
         return false;
     }
 
-	/**
-	 * 
-	 */
-	private boolean canExtendFromNode(Board board, Player player, int nodeId) {
-        return false;
-    }
 }
