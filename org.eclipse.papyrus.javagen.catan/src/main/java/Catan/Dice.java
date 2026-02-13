@@ -4,15 +4,20 @@
 
 package Catan;
 
-/************************************************************/
-/**
- * 
+import java.util.Random;
+
+/*
+ * Represents a single standard 6-sided die.
  */
-public class Dice {
-	/**
-	 * 
-	 */
-	public int Roll() {
-        return 0;
+public final class Dice {
+    // Java's built-in random number generator
+    private final Random random = new Random();
+
+    /*
+     * Generates a random number between 1 and 6.
+     * nextInt(6) gives 0-5, so we add 1 to get 1-6.
+     */
+    public int roll() {
+        return random.nextInt(6) + 1;
     }
 }
