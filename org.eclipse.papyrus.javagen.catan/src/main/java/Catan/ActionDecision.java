@@ -4,70 +4,73 @@
 
 package Catan;
 
-/************************************************************/
-/**
- * 
+/*
+ * Represents a specific choice a player makes during their turn.
+ * * This class acts as a "wrapper" that bundles two pieces of information together:
+ * 1. What action the player wants to take (e.g., build a ROAD).
+ * 2. Where they want to do it (the specific ID of the node or path).
+ * * We use "Static Factory Methods" (like ActionDecision.road()) instead of a
+ * public constructor. This makes the code easier to read because the method
+ * name tells you exactly what kind of decision is being created.
  */
-public class ActionDecision {
-	/**
-	 * 
-	 */
-	private BuildAction action;
-	/**
-	 * 
-	 */
-	private int targetId;
+public final class ActionDecision {
+	// The type of move being requested (Road, Settlement, City, or None)
+	private final BuildAction action;
 
-	/**
-	 * 
-	 * @param action 
-	 * @param targetId 
+	// The ID of the board component (Node or Path) involved in this action.
+	// - For ROAD actions, this is the pathId.
+	// - For SETTLEMENT or CITY actions, this is the nodeId.
+	// - For NONE, this is ignored (usually -1).
+	private final int targetId;
+
+	/* * Private constructor.
+	 * We keep this private to force users to use the static methods below,
+	 * ensuring that only valid combinations of actions and IDs are created.
 	 */
 	private ActionDecision(BuildAction action, int targetId) {
+		this.action = action;
+		this.targetId = targetId;
 	}
 
-	/**
-	 * 
+	/*
+	 * Creates a "pass" decision.
+	 * Used when a player cannot afford anything or chooses to skip their action.
 	 */
-	public static ActionDecision None() {
+	public static ActionDecision none() {
 		return new ActionDecision(BuildAction.NONE, -1);
 	}
 
-	/**
-	 * 
-	 * @param pathId 
+	/*
+	 * Creates a decision to build a Road.
+	 * Requires the ID of the path where the road will go.
 	 */
 	public static ActionDecision road(int pathId) {
-		return null;
+		return new ActionDecision(BuildAction.ROAD, pathId);
 	}
 
-	/**
-	 * 
-	 * @param nodeId 
+	/*
+	 * Creates a decision to build a Settlement.
+	 * Requires the ID of the node where the settlement will be placed.
 	 */
 	public static ActionDecision settlement(int nodeId) {
-		return null;
+		return new ActionDecision(BuildAction.SETTLEMENT, nodeId);
 	}
 
-	/**
-	 * 
-	 * @param nodeId 
+	/*
+	 * Creates a decision to upgrade a Settlement to a City.
+	 * Requires the ID of the node containing the existing settlement.
 	 */
 	public static ActionDecision city(int nodeId) {
-		return null;
+		return new ActionDecision(BuildAction.CITY, nodeId);
 	}
 
-	/**
-	 * 
-	 */
+	// Returns the type of action stored in this decision
 	public BuildAction getAction() {
-        return null;
-    }
+		return action;
+	}
 
-	/**
-	 * 
-	 */
+	// Returns the target ID. The meaning of this ID depends on the action type
 	public int getTargetId() {
-        return 0;
-    }
+		return targetId;
+	}
 }
