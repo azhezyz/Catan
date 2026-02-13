@@ -4,53 +4,85 @@
 
 package Catan;
 
-/************************************************************/
-/**
- * 
+import java.util.Objects;
+import java.util.Optional;
+
+/*
+ * EN: Represents a building on a node (NONE / SETTLEMENT / CITY).
+ * EN: Immutable value object: type and owner never mutate after creation.
+ * ZH: 表示节点上的建筑（空/定居点/城市）。
+ * ZH: 不可变值对象：创建后类型和拥有者不会改变。
  */
-public class Building {
-	/**
-	 * 
-	 */
-	private BuildingType type;
-	/**
-	 * 
-	 */
-	private Player owner;
+public final class Building {
+	private final BuildingType type;
+	private final Player owner;
 
-	/**
-	 * 
+	/*
+	 * EN: Private constructor with invariant checks:
+	 * EN: NONE has no owner; occupied types must have an owner.
+	 * ZH: 私有构造并校验不变式：
+	 * ZH: NONE 不能有拥有者；有建筑类型必须有拥有者。
 	 */
-	public Building(BuildingType type, Player owner) {
+	private Building(BuildingType type, Player owner) {
+		this.type = Objects.requireNonNull(type, "type");
+		this.owner = owner;
+		if (type == BuildingType.NONE && owner != null) {
+			throw new IllegalArgumentException("Empty building cannot have an owner.");
+		}
+		if (type != BuildingType.NONE && owner == null) {
+			throw new IllegalArgumentException("Occupied building must have an owner.");
+		}
 	}
 
-	/**
-	 * 
-	 */
-	public static void empty() {
+	// EN: Factory for empty node state.
+	// ZH: 创建空建筑状态。
+	public static Building empty() {
+		return new Building(BuildingType.NONE, null);
 	}
 
-	/**
-	 * 
-	 */
-	public static void settlement() {
+	// EN: Factory for settlement.
+	// ZH: 创建定居点。
+	public static Building settlement(Player owner) {
+		return new Building(BuildingType.SETTLEMENT, owner);
 	}
 
-	/**
-	 * 
-	 */
-	public static void city() {
+	// EN: Factory for city.
+	// ZH: 创建城市。
+	public static Building city(Player owner) {
+		return new Building(BuildingType.CITY, owner);
 	}
 
-	/**
-	 * 
-	 */
-	public void getType() {
+	// EN: Return building type.
+	// ZH: 返回建筑类型。
+	public BuildingType getType() {
+		return type;
 	}
 
-	/**
-	 * 
-	 */
-	public void productionYield() {
+	// EN: Return owner as Optional (empty if NONE).
+	// ZH: 以 Optional 返回拥有者（空建筑时为空）。
+	public Optional<Player> getOwner() {
+		return Optional.ofNullable(owner);
+	}
+
+	// EN: Whether node is occupied by any building.
+	// ZH: 节点是否已被建筑占据。
+	public boolean isOccupied() {
+		return type != BuildingType.NONE;
+	}
+
+	// EN: Check owner identity.
+	// ZH: 判断是否由指定玩家拥有。
+	public boolean isOwnedBy(Player player) {
+		return owner != null && owner.equals(player);
+	}
+
+	// EN: Production amount contributed by this building.
+	// ZH: 该建筑的资源产出倍率。
+	public int productionYield() {
+		return switch (type) {
+			case NONE -> 0;
+			case SETTLEMENT -> 1;
+			case CITY -> 2;
+		};
 	}
 }
