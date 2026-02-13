@@ -6,153 +6,191 @@ package Catan;
 
 /************************************************************/
 
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
-/**
- * 
+/*
+ * EN: Represents a player in the game.
+ * EN: Tracks resources, owned buildings/roads, and VP-related status.
+ * ZH: 表示一名玩家。
+ * ZH: 跟踪资源、已拥有建筑/道路以及胜利点相关状态。
  */
-public class Player {
-	/**
-	 * 
-	 */
-	private String name;
-	/**
-	 * 
-	 */
-	private EnumMap<ResourceType, Integer> resource;
-	/**
-	 * 
-	 */
-	private Set<Integer> settlementNodeIds;
-	/**
-	 * 
-	 */
-	private Set<Integer>  cityNodeIds;
-	/**
-	 * 
-	 */
-	private Set<Integer> roadNodeIds;
-	/**
-	 * 
-	 */
-	private boolean hasLongestRoad;
+public final class Player {
+    private final String name;
+    private final EnumMap<ResourceType, Integer> resources;
+    private final Set<Integer> settlementNodeIds;
+    private final Set<Integer> cityNodeIds;
+    private final Set<Integer> roadPathIds;
+    private boolean hasLongestRoad = false;
 
-	/**
-	 * 
-	 */
-	public Player(String name) {
-	}
+    public Player(String name) {
+        this.name = requireName(name);
+        this.resources = new EnumMap<>(ResourceType.class);
+        for (ResourceType type : ResourceType.values()) {
+            resources.put(type, 0);
+        }
+        this.settlementNodeIds = new HashSet<>();
+        this.cityNodeIds = new HashSet<>();
+        this.roadPathIds = new HashSet<>();
+    }
 
-	/**
-	 * 
-	 */
-	public static String requireName(String name) {
+    private static String requireName(String name) {
+        String trimmed = Objects.requireNonNull(name, "name").trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Player name cannot be blank.");
+        }
+        return trimmed;
+    }
+
+    public String getName() {
         return name;
     }
 
-	/**
-	 * 
-	 */
-	public  String getName() {
-        return "";
+    public Map<ResourceType, Integer> getResources() {
+        return Collections.unmodifiableMap(resources);
+    }
+    public int getTotalResourceCount(){
+        int total = 0;
+        for (int amount : resources.values()) {
+            total += amount;
+        }
+        return total;
+    }
+    
+    public int getResourceCount(ResourceType type) {
+        return resources.getOrDefault(type, 0);
     }
 
-	/**
-	 * 
-	 */
-	public int getResourceCount() {
-        return 0;
+    // EN: Basic resource management (add to hand).
+    // ZH: 基础资源管理（增加手牌资源）。
+    public void addResource(ResourceType type, int amount) {
+        Objects.requireNonNull(type, "type");
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive.");
+        }
+        resources.put(type, getResourceCount(type) + amount);
     }
 
-	/**
-	 * 
-	 */
-	public Map<ResourceType, Integer> getResources() {
-        return Map.of();
+    public boolean canAfford(Map<ResourceType, Integer> cost) {
+        Objects.requireNonNull(cost, "cost");
+        for (Map.Entry<ResourceType, Integer> entry : cost.entrySet()) {
+            if (getResourceCount(entry.getKey()) < entry.getValue()) {
+                return false;
+            }
+        }
+        return true;
     }
 
-	/**
-	 * 
-	 */
-	public int getTotalResourceCount() {
-        return 0;
+    public void spend(Map<ResourceType, Integer> cost) {
+        if (!canAfford(cost)) {
+            throw new IllegalStateException("Insufficient resources to spend.");
+        }
+        for (Map.Entry<ResourceType, Integer> entry : cost.entrySet()) {
+            resources.put(entry.getKey(), getResourceCount(entry.getKey()) - entry.getValue());
+        }
     }
 
-	/**
-	 * 
-	 */
-	public boolean canAfford() {
-        return false;
+    public void addSettlement(int nodeId) {
+        if (cityNodeIds.contains(nodeId)) {
+            throw new IllegalStateException("Node " + nodeId + " is already a city.");
+        }
+        if (!settlementNodeIds.add(nodeId)) {
+            throw new IllegalStateException("Settlement already recorded for node " + nodeId);
+        }
     }
 
-	/**
-	 * 
-	 */
-	public void spend() {
-	}
-
-	/**
-	 * 
-	 */
-	public void addSettlement(int nodeId) {
-	}
-
-	/**
-	 * 
-	 */
-	public void addCity(int nodeId) {
-	}
-
-	/**
-	 * 
-	 */
-	public void addRoad(int pathId) {
-	}
-
-	/**
-	 * 
-	 */
-	public void getSettlementNodeIds() {
-	}
-
-	/**
-	 * 
-	 */
-	public void getRoadPathIds() {
-	}
-
-	/**
-	 * 
-	 */
-	public void getCityNodeIds() {
-	}
-
-	/**
-	 * 
-	 */
-	public void setHasLongestRoad() {
-	}
-
-	/**
-	 * 
-	 */
-	public int getVictoryPoints() {
-        return 0;
+    public void addCity(int nodeId) {
+        if (!settlementNodeIds.remove(nodeId)) {
+            throw new IllegalStateException("Cannot upgrade node " + nodeId + " without an existing settlement.");
+        }
+        if (!cityNodeIds.add(nodeId)) {
+            throw new IllegalStateException("City already recorded for node " + nodeId);
+        }
     }
 
-	/**
-	 * 
-	 */
-	public int calculateLongestRoad() {
-        return 0;
+    public void addRoad(int pathId) {
+        if (!roadPathIds.add(pathId)) {
+            throw new IllegalStateException("Road already recorded for path " + pathId);
+        }
     }
 
-	/**
-	 * 
-	 */
-	public int walkRoad() {
-        return 0;
+    public Set<Integer> getSettlementNodeIds() {
+        return Collections.unmodifiableSet(settlementNodeIds);
+    }
+
+    public Set<Integer> getRoadPathIds() {
+        return Collections.unmodifiableSet(roadPathIds);
+    }
+
+    public Set<Integer> getCityNodeIds() {
+        return Collections.unmodifiableSet(cityNodeIds);
+    }
+
+    // EN: Mark whether the player currently holds Longest Road.
+    // ZH: 设置玩家是否持有“最长路”称号。
+    public void setHasLongestRoad(boolean hasIt) {
+        this.hasLongestRoad = hasIt;
+    }
+
+    /*
+     * EN: Scoring logic.
+     * EN: Settlement=1 VP, City=2 VP, Longest Road bonus=2 VP.
+     * ZH: 计分逻辑。
+     * ZH: 定居点=1 分，城市=2 分，最长路奖励=2 分。
+     */
+    public int getVictoryPoints() {
+        int points = 0;
+        // 1 point per settlement and 2 points per city
+        points += settlementNodeIds.size();
+        points += cityNodeIds.size() * 2;
+        // 2 points if holding Longest Road
+        if (hasLongestRoad) {
+            points += 2;
+        }
+        return points;
+    }
+
+    /*
+     * EN: Longest road calculation via DFS.
+     * EN: Start from each owned path and explore the longest walk without reusing edges.
+     * ZH: 使用 DFS 计算最长道路。
+     * ZH: 从每条已拥有道路出发，寻找不重复边的最长可达路径。
+     */
+    public int calculateLongestRoad(Board board) {
+        if (roadPathIds.isEmpty()) return 0;
+        int maxLen = 0;
+        for (int pathId : roadPathIds) {
+            Path startPath = board.getPath(pathId);
+            // Walk from both ends of the starting road segment
+            maxLen = Math.max(maxLen, 1 + walkRoad(board, startPath.getNodeAId(), new HashSet<>(Set.of(pathId))));
+            maxLen = Math.max(maxLen, 1 + walkRoad(board, startPath.getNodeBId(), new HashSet<>(Set.of(pathId))));
+        }
+        return maxLen;
+    }
+
+    // EN: DFS helper for road walking with edge backtracking.
+    // ZH: DFS 递归辅助函数，带边回溯。
+    private int walkRoad(Board board, int nodeId, Set<Integer> visited) {
+        Node node = board.getNode(nodeId);
+        // EN: Opponent building blocks road continuity through this node.
+        // ZH: 若该节点有对手建筑，则道路在此中断。
+        if (node.isClaimed() && !node.isOwnedBy(this)) {
+            return 0;
+        }
+
+        int deepest = 0;
+        for (Path path : board.pathsAdjacentToNode(nodeId)) {
+            if (!visited.contains(path.getId()) && path.isOwnedBy(this)) {
+                visited.add(path.getId());
+                int nextNode = (path.getNodeAId() == nodeId) ? path.getNodeBId() : path.getNodeAId();
+                deepest = Math.max(deepest, 1 + walkRoad(board, nextNode, visited));
+                visited.remove(path.getId()); // Backtrack
+            }
+        }
+        return deepest;
     }
 }

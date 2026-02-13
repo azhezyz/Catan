@@ -8,5 +8,48 @@ package Catan;
 /**
  * 
  */
-public class GameConfig {
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+
+/*
+ * GameConfig manages the settings for the simulation.
+ * It reads from a configuration file (like config.properties) so you can 
+ * change how long the simulation runs without changing the Java code.
+ */
+public final class GameConfig {
+    private final int maxRounds;
+
+    // Private constructor ensures we use the load() method to create settings.
+    private GameConfig(int maxRounds) {
+        // Validation: Catan games shouldn't run forever, so we cap it at 8192.
+        if (maxRounds <= 0 || maxRounds > 8192) {
+            throw new IllegalArgumentException("Max rounds must be between 1 and 8192.");
+        }
+        this.maxRounds = maxRounds;
+    }
+
+    /*
+     * Loads settings from a file path.
+     * If the file doesn't exist, it uses a default value of 10 rounds.
+     */
+    public static GameConfig load(Path path) {
+        Properties properties = new Properties();
+        if (Files.exists(path)) {
+            try (InputStream input = Files.newInputStream(path)) {
+                properties.load(input);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to read config file.", e);
+            }
+        }
+        // Looks for "maxRounds" in the file; if not found, uses "10".
+        int rounds = Integer.parseInt(properties.getProperty("maxRounds", "10"));
+        return new GameConfig(rounds);
+    }
+
+    public int getMaxRounds() {
+        return maxRounds;
+    }
 }
