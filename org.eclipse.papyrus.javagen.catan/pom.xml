@@ -6,7 +6,8 @@
   <properties>
     <sonar.organization>azhezyz</sonar.organization>
     <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-    <sonar.coverage.exclusions>**/Catan/Demonstrator.java,**/Catan/GameEngine.java</sonar.coverage.exclusions>
+    <sonar.exclusions>**/src-gen/**,**/scr-gen/**</sonar.exclusions>
+    <sonar.coverage.exclusions>**/Catan/Demonstrator.java,**/Catan/GameEngine.java,**/src-gen/**,**/scr-gen/**</sonar.coverage.exclusions>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <!-- ensure tests run under JUnit 5 -->
@@ -30,10 +31,18 @@
   </dependencies>
 
   <build>
+    <sourceDirectory>src/main/java</sourceDirectory>
+    <testSourceDirectory>src/test/java</testSourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
+        <configuration>
+          <excludes>
+            <exclude>**/src-gen/**</exclude>
+            <exclude>**/scr-gen/**</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <!-- jacoco for coverage measurement -->
       <plugin>
@@ -45,8 +54,11 @@
           <excludes>
             <exclude>jdk/**</exclude>
             <exclude>sun/**</exclude>
+            <exclude>**/src-gen/**</exclude>
+            <exclude>**/scr-gen/**</exclude>
             <exclude>**/Catan/Demonstrator*</exclude>
             <exclude>**/Catan/GameEngine*</exclude>
+            <exclude>catan/**</exclude>
           </excludes>
         </configuration>
         <executions>
