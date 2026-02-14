@@ -5,6 +5,7 @@
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=azhezyz_Catan&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=azhezyz_Catan)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=azhezyz_Catan&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=azhezyz_Catan)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=azhezyz_Catan&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=azhezyz_Catan)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=azhezyz_Catan&metric=coverage)](https://sonarcloud.io/summary/new_code?id=azhezyz_Catan)
 
 
 A model-driven Java implementation of **Settlers of Catan**, built with **Eclipse Papyrus UML** and Java code generation.
