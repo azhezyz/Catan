@@ -128,6 +128,12 @@ java -cp target/classes Catan.HumanGameLauncher game.config visualize/state.json
 ```
 
 Python setup for the visualizer lives under `org.eclipse.papyrus.javagen.catan/visualize/README.md`.
+On macOS/Linux you can initialize it directly with:
+
+```bash
+cd org.eclipse.papyrus.javagen.catan/visualize
+./setup_visualizer.sh
+```
 
 ## Development Workflow
 1. Open the UML model in Eclipse Papyrus.

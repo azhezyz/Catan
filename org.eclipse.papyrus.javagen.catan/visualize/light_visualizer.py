@@ -4,7 +4,6 @@ import sys
 import time
 from typing import Dict, Optional
 
-import numpy as np
 from PIL import Image
 from catanatron.game import Game
 from catanatron.gym.envs.pygame_renderer import PygameRenderer
