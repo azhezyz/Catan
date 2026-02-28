@@ -111,6 +111,24 @@ From `org.eclipse.papyrus.javagen.catan`:
 mvn compile
 ```
 
+## Human Mode
+The Maven module also includes a human-playable launcher plus a Python visualizer.
+
+From the repository root:
+
+```powershell
+.\start_game.bat
+```
+
+Or from `org.eclipse.papyrus.javagen.catan`:
+
+```powershell
+mvn -q -DskipTests compile
+java -cp target/classes Catan.HumanGameLauncher game.config visualize/state.json
+```
+
+Python setup for the visualizer lives under `org.eclipse.papyrus.javagen.catan/visualize/README.md`.
+
 ## Development Workflow
 1. Open the UML model in Eclipse Papyrus.
 2. Update classes, attributes, and associations in `catan.uml`.

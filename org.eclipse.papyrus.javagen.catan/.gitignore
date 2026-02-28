@@ -1,2 +1,9 @@
 /bin/
 /target/
+/.venv/
+/visualize/.venv/
+/visualize/__pycache__/
+/visualize/scraped_boards/
+/visualize/visualizer.out.log
+/visualize/visualizer.err.log
+/visualize/catanatron/

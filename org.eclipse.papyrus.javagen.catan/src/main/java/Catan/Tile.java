@@ -47,6 +47,10 @@ public final class Tile implements Identifiable {
         return resourceType;
     }
 
+    public ResourceType getResource() {
+        return resourceType;
+    }
+
     public Optional<ResourceType> getResourceTypeOpt() {
         return Optional.ofNullable(resourceType);
     }

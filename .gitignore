@@ -1,1 +1,10 @@
 /.metadata/
+/.idea/
+
+/org.eclipse.papyrus.javagen.catan/.venv/
+/org.eclipse.papyrus.javagen.catan/visualize/.venv/
+/org.eclipse.papyrus.javagen.catan/visualize/__pycache__/
+/org.eclipse.papyrus.javagen.catan/visualize/scraped_boards/
+/org.eclipse.papyrus.javagen.catan/visualize/visualizer.out.log
+/org.eclipse.papyrus.javagen.catan/visualize/visualizer.err.log
+/org.eclipse.papyrus.javagen.catan/visualize/catanatron/
