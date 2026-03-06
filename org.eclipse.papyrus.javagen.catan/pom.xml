@@ -100,7 +100,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
         <configuration>
-          <forkCount>0</forkCount>
+          <!-- JaCoCo prepare-agent needs forked test JVM -->
+          <forkCount>1</forkCount>
           <useModulePath>false</useModulePath>
           <!-- include Papyrus-generated unit tests explicitly -->
           <includes>
