@@ -64,17 +64,17 @@ class HumanGameLauncherTest {
     }
 
     @Test
-    void resolvePythonExecutableFindsWindowsVenvPath() throws Exception {
+    void resolvePythonExecutableFindsUnixVenvPath() throws Exception {
         Path tempRoot = Files.createTempDirectory("launcher-python");
         File visualizeDir = tempRoot.toFile();
 
-        File scriptsDir = new File(visualizeDir, ".venv\\Scripts");
-        assertTrue(scriptsDir.mkdirs() || scriptsDir.isDirectory());
-        File python = new File(scriptsDir, "python.exe");
+        File binDir = new File(new File(visualizeDir, ".venv"), "bin");
+        assertTrue(binDir.mkdirs() || binDir.isDirectory());
+        File python = new File(binDir, "python");
         assertTrue(python.createNewFile() || python.isFile());
 
         String resolved = invokeResolvePythonExecutable(visualizeDir);
         assertNotNull(resolved);
-        assertTrue(resolved.endsWith("python.exe"));
+        assertTrue(resolved.endsWith("python"));
     }
 }
