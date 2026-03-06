@@ -10,6 +10,9 @@
     <sonar.coverage.exclusions>**/Catan/Demonstrator.java,**/Catan/GameEngine.java,**/src-gen/**,**/scr-gen/**</sonar.coverage.exclusions>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
+    <surefire.version>3.5.2</surefire.version>
+    <surefire.forkCount>1</surefire.forkCount>
+    <jacoco.skip>false</jacoco.skip>
     <!-- ensure tests run under JUnit 5 -->
     <maven.compiler.testSource>21</maven.compiler.testSource>
     <maven.compiler.testTarget>21</maven.compiler.testTarget>
@@ -44,6 +47,7 @@
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.14</version>
         <configuration>
+          <skip>${jacoco.skip}</skip>
           <!-- avoid instrumenting JDK/internal classes which trigger errors on Java 21 -->
           <excludes>
             <exclude>jdk/**</exclude>
@@ -101,10 +105,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.2.5</version>
+        <version>${surefire.version}</version>
         <configuration>
           <!-- JaCoCo prepare-agent needs forked test JVM -->
-          <forkCount>1</forkCount>
+          <forkCount>${surefire.forkCount}</forkCount>
+          <argLine>@{argLine}</argLine>
           <useModulePath>false</useModulePath>
           <!-- include Papyrus-generated unit tests explicitly -->
           <includes>
@@ -115,4 +120,17 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- JDK 24+ can crash at JVM startup when loading the JaCoCo javaagent on some Windows setups. -->
+    <profile>
+      <id>disable-jacoco-on-jdk24plus</id>
+      <activation>
+        <jdk>[24,)</jdk>
+      </activation>
+      <properties>
+        <jacoco.skip>true</jacoco.skip>
+      </properties>
+    </profile>
+  </profiles>
 </project>
