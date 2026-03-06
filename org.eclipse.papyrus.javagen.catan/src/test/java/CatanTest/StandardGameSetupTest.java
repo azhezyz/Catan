@@ -30,6 +30,40 @@ class StandardGameSetupTest {
     }
 
     @Test
+    void partitionTesting_tilesForRollInputPartitions() {
+        Board board = StandardGameSetup.buildFullBoard();
+
+        // Partition A: legal roll and token exists on board
+        List<Tile> hits = board.tilesForRoll(6);
+        assertFalse(hits.isEmpty());
+        assertTrue(hits.stream().allMatch(tile -> tile.getNumberToken() == 6));
+
+        // Partition B: legal roll but token does not exist on this board
+        assertTrue(board.tilesForRoll(7).isEmpty());
+
+        // Partition C: out-of-range roll
+        assertTrue(board.tilesForRoll(1).isEmpty());
+        assertTrue(board.tilesForRoll(13).isEmpty());
+    }
+
+    @Test
+    void boundaryTesting_nodeAndPathIdMinMaxAndOutOfRange() {
+        Board board = StandardGameSetup.buildFullBoard();
+
+        // Valid boundaries
+        assertEquals(0, board.getNode(0).getId());
+        assertEquals(53, board.getNode(53).getId());
+        assertEquals(0, board.getPath(0).getId());
+        assertEquals(71, board.getPath(71).getId());
+
+        // Out-of-range just outside boundaries
+        assertThrows(IllegalArgumentException.class, () -> board.getNode(-1));
+        assertThrows(IllegalArgumentException.class, () -> board.getNode(54));
+        assertThrows(IllegalArgumentException.class, () -> board.getPath(-1));
+        assertThrows(IllegalArgumentException.class, () -> board.getPath(72));
+    }
+
+    @Test
     void seedInitialStatePlacesPiecesAndGrantsStarterResources() {
         Board board = StandardGameSetup.buildFullBoard();
         Player alice = new Player("alice");
