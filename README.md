@@ -117,7 +117,7 @@ The Maven module also includes a human-playable launcher plus a Python visualize
 From the repository root:
 
 ```powershell
-.\start_game.bat
+./start_game.bat
 ```
 
 Or from `org.eclipse.papyrus.javagen.catan`:
@@ -146,3 +146,11 @@ cd org.eclipse.papyrus.javagen.catan/visualize
 - `src-gen` is generated output and may be overwritten by regeneration.
 - Keep model changes and generated code changes synchronized in commits.
 - If generated fields/types are placeholders, refine UML typing/mapping before regeneration.
+
+## Player Colors
+In the visualizer, each player is represented by a different color:
+* **Player 1** – Red
+* **Player 2** – Blue
+* **Player 3** – Yellow
+* **Player 4** – White
+These colors are used to distinguish players' roads, settlements, and cities on the board visualization.
