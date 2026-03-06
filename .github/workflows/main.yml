@@ -33,8 +33,13 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B -f org.eclipse.papyrus.javagen.catan/pom.xml clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=azhezyz_Catan -Dsonar.coverage.jacoco.xmlReportPaths=org.eclipse.papyrus.javagen.catan/target/site/jacoco/jacoco.xml
-      - name: Verify JaCoCo report files
+        working-directory: org.eclipse.papyrus.javagen.catan
         run: |
-          test -f org.eclipse.papyrus.javagen.catan/target/site/jacoco/jacoco.xml
-          ls -lah org.eclipse.papyrus.javagen.catan/target/site/jacoco
+          mvn -B clean test jacoco:report
+          test -f target/site/jacoco/jacoco.xml
+          mvn -B -DskipTests org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=azhezyz_Catan -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+      - name: Verify JaCoCo report files
+        working-directory: org.eclipse.papyrus.javagen.catan
+        run: |
+          test -f target/site/jacoco/jacoco.xml
+          ls -lah target/site/jacoco
