@@ -78,6 +78,9 @@
               <goal>check</goal>
             </goals>
             <configuration>
+              <!-- Keep reporting coverage but do not fail CI on threshold misses.
+                   SonarQube Quality Gate is the enforcement point. -->
+              <haltOnFailure>false</haltOnFailure>
               <rules>
                 <rule>
                   <element>PACKAGE</element>
