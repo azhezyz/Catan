@@ -153,4 +153,5 @@ In the visualizer, each player is represented by a different color:
 * **Player 2** – Blue
 * **Player 3** – Yellow
 * **Player 4** – White
+
 These colors are used to distinguish players' roads, settlements, and cities on the board visualization.
