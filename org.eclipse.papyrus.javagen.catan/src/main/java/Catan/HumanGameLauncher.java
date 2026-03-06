@@ -42,10 +42,10 @@ public final class HumanGameLauncher {
         System.out.println("=======================================");
         System.out.println("Enter player names. Leave blank to use default names.");
 
-        String p1 = readName(scanner, "Player 1", "Alice");
-        String p2 = readName(scanner, "Player 2", "Bob");
-        String p3 = readName(scanner, "Player 3", "Charlie");
-        String p4 = readName(scanner, "Player 4", "Diana");
+        String p1 = readName(scanner, "Red", "Alice");
+        String p2 = readName(scanner, "Blue", "Bob");
+        String p3 = readName(scanner, "Yellow", "Charlie");
+        String p4 = readName(scanner, "White", "Diana");
 
         System.out.println("Players: " + p1 + ", " + p2 + ", " + p3 + ", " + p4);
         System.out.println("Game starts now.");
