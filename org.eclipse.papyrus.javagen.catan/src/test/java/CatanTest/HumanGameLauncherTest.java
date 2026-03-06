@@ -40,6 +40,18 @@ class HumanGameLauncherTest {
         return (String) method.invoke(null, visualizeDir);
     }
 
+    private static Process invokeStartVisualizerProcess(Path statePath) throws Exception {
+        Method method = HumanGameLauncher.class.getDeclaredMethod("startVisualizerProcess", Path.class);
+        method.setAccessible(true);
+        return (Process) method.invoke(null, statePath);
+    }
+
+    private static void invokeStopVisualizer(Process process) throws Exception {
+        Method method = HumanGameLauncher.class.getDeclaredMethod("stopVisualizer", Process.class);
+        method.setAccessible(true);
+        method.invoke(null, process);
+    }
+
     @Test
     void promptPlayerNamesUsesDefaultsOnBlankInput() throws Exception {
         List<String> names = invokePromptPlayerNames(new Scanner("\n\n\n\n"));
@@ -64,6 +76,17 @@ class HumanGameLauncherTest {
     }
 
     @Test
+    void resolveVisualizeDirFallsBackToUserDirVisualize() throws Exception {
+        Path tempRoot = Files.createTempDirectory("launcher-fallback");
+        Path nonVisualizeParent = Files.createDirectory(tempRoot.resolve("states"));
+        Path statePath = nonVisualizeParent.resolve("state.json");
+
+        File resolved = invokeResolveVisualizeDir(statePath);
+        File expected = new File(System.getProperty("user.dir"), "visualize");
+        assertEquals(expected.getCanonicalPath(), resolved.getCanonicalPath());
+    }
+
+    @Test
     void resolvePythonExecutableFindsUnixVenvPath() throws Exception {
         Path tempRoot = Files.createTempDirectory("launcher-python");
         File visualizeDir = tempRoot.toFile();
@@ -76,5 +99,71 @@ class HumanGameLauncherTest {
         String resolved = invokeResolvePythonExecutable(visualizeDir);
         assertNotNull(resolved);
         assertTrue(resolved.endsWith("python"));
+    }
+
+    @Test
+    void resolvePythonExecutableReturnsNullWhenNoVenv() throws Exception {
+        Path tempRoot = Files.createTempDirectory("launcher-no-python");
+        String resolved = invokeResolvePythonExecutable(tempRoot.toFile());
+        assertNull(resolved);
+    }
+
+    @Test
+    void startVisualizerProcessReturnsNullWhenDirectoryMissing() throws Exception {
+        Path tempRoot = Files.createTempDirectory("launcher-no-venv");
+        Path visualize = Files.createDirectory(tempRoot.resolve("visualize"));
+        Path statePath = visualize.resolve("state.json");
+        Process process = invokeStartVisualizerProcess(statePath);
+        if (process != null) {
+            process.destroyForcibly();
+        }
+        assertNull(process);
+    }
+
+    @Test
+    void stopVisualizerHandlesNullAndAliveProcess() throws Exception {
+        invokeStopVisualizer(null);
+
+        Process fakeAlive = new Process() {
+            private boolean destroyed;
+
+            @Override
+            public java.io.OutputStream getOutputStream() {
+                return java.io.OutputStream.nullOutputStream();
+            }
+
+            @Override
+            public java.io.InputStream getInputStream() {
+                return java.io.InputStream.nullInputStream();
+            }
+
+            @Override
+            public java.io.InputStream getErrorStream() {
+                return java.io.InputStream.nullInputStream();
+            }
+
+            @Override
+            public int waitFor() {
+                return 0;
+            }
+
+            @Override
+            public int exitValue() {
+                return 0;
+            }
+
+            @Override
+            public void destroy() {
+                destroyed = true;
+            }
+
+            @Override
+            public boolean isAlive() {
+                return !destroyed;
+            }
+        };
+
+        invokeStopVisualizer(fakeAlive);
+        assertFalse(fakeAlive.isAlive());
     }
 }
