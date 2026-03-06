@@ -71,4 +71,50 @@ class BoardTest {
         List<Path> adjacentTo0 = board.pathsAdjacentToNode(0);
         assertEquals(2, adjacentTo0.size(), "Node 0 should have exactly two adjacent paths.");
     }
+
+    @Test
+    void testUnknownNodeAndPathLookupThrows() {
+        Board board = new Board(sampleTiles, sampleNodes, samplePaths);
+        assertThrows(IllegalArgumentException.class, () -> board.getNode(999));
+        assertThrows(IllegalArgumentException.class, () -> board.getPath(999));
+        assertThrows(IllegalArgumentException.class, () -> board.pathsAdjacentToNode(999));
+    }
+
+    @Test
+    void testDuplicateIdsThrow() {
+        List<Node> duplicateNodes = List.of(
+            new Node(1, Set.of(0), Set.of()),
+            new Node(1, Set.of(0), Set.of())
+        );
+        assertThrows(IllegalArgumentException.class, () -> new Board(
+            List.of(new Tile(0, ResourceType.WOOD, 8, Set.of(1))),
+            duplicateNodes,
+            List.of(new Path(0, 1, 2))
+        ));
+
+        List<Path> duplicatePaths = List.of(
+            new Path(3, 0, 1),
+            new Path(3, 1, 2)
+        );
+        assertThrows(IllegalArgumentException.class, () -> new Board(sampleTiles, sampleNodes, duplicatePaths));
+    }
+
+    @Test
+    void testNodeToMissingTileThrows() {
+        List<Node> brokenNodes = List.of(new Node(0, Set.of(999), Set.of()));
+        assertThrows(IllegalArgumentException.class, () -> new Board(
+            List.of(new Tile(0, ResourceType.WOOD, 6, Set.of(0))),
+            brokenNodes,
+            List.of(new Path(0, 0, 1))
+        ));
+    }
+
+    @Test
+    void testPathToMissingNodeThrows() {
+        assertThrows(IllegalArgumentException.class, () -> new Board(
+            sampleTiles,
+            sampleNodes,
+            List.of(new Path(99, 0, 999))
+        ));
+    }
 }

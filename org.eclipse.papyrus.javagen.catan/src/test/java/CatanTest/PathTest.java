@@ -51,6 +51,7 @@ class PathTest {
     @Test
     void claimAndOwnership() {
         assertFalse(path.isClaimed());
+        assertThrows(NullPointerException.class, () -> path.claim(null));
         path.claim(alice);
         assertTrue(path.isClaimed());
         assertTrue(path.isOwnedBy(alice));
@@ -83,5 +84,29 @@ class PathTest {
                 List.of(n0, n1, new Node(2, Set.of(0), Set.of(0))),
                 List.of(path, other));
         assertTrue(path.canBuildRoad(board, alice));
+    }
+
+    @Test
+    void cannotBuildRoadWhenPathAlreadyClaimed() {
+        path.claim(alice);
+        assertFalse(path.canBuildRoad(board, alice));
+    }
+
+    @Test
+    void opponentBuildingBlocksRoadExtension() {
+        Player bob = new Player("bob");
+
+        Node n2 = new Node(2, Set.of(0), Set.of(0));
+        Path candidate = new Path(10, 0, 1);
+        Path ownedRoad = new Path(11, 0, 2);
+        Board blockedBoard = new Board(
+                List.of(new Tile(0, ResourceType.WOOD, 5, Set.of(0, 1, 2))),
+                List.of(n0, n1, n2),
+                List.of(candidate, ownedRoad));
+
+        ownedRoad.claim(alice);
+        n0.claim(bob);
+
+        assertFalse(candidate.canBuildRoad(blockedBoard, alice));
     }
 }
