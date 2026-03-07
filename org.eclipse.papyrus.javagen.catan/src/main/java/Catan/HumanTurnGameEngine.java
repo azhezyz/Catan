@@ -6,11 +6,15 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.function.IntSupplier;
 
 public final class HumanTurnGameEngine {
     private static final List<String> COLOR_ORDER = List.of("RED", "BLUE", "ORANGE", "WHITE");
@@ -21,7 +25,9 @@ public final class HumanTurnGameEngine {
     private final PrintStream out;
     private final java.nio.file.Path statePath;
     private final Map<Player, String> playerColors;
-    private final DiceSet diceSet;
+    private final IntSupplier rollSupplier;
+    private final Random random;
+    private int robberTileId;
 
     private Player longestRoadHolder = null;
     private int currentMaxRoadLength = 4;
@@ -33,13 +39,27 @@ public final class HumanTurnGameEngine {
             PrintStream out,
             java.nio.file.Path statePath
     ) {
+        this(board, players, scanner, out, statePath, new DiceSet()::nextRoll, new Random());
+    }
+
+    public HumanTurnGameEngine(
+            Board board,
+            List<Player> players,
+            Scanner scanner,
+            PrintStream out,
+            java.nio.file.Path statePath,
+            IntSupplier rollSupplier,
+            Random random
+    ) {
         this.board = Objects.requireNonNull(board, "board");
         this.players = List.copyOf(Objects.requireNonNull(players, "players"));
         this.scanner = Objects.requireNonNull(scanner, "scanner");
         this.out = Objects.requireNonNull(out, "out");
         this.statePath = Objects.requireNonNull(statePath, "statePath");
+        this.rollSupplier = Objects.requireNonNull(rollSupplier, "rollSupplier");
+        this.random = Objects.requireNonNull(random, "random");
         this.playerColors = assignColors(this.players);
-        this.diceSet = new DiceSet();
+        this.robberTileId = findInitialRobberTileId();
     }
 
     public void runGame(int turns) {
@@ -86,7 +106,11 @@ public final class HumanTurnGameEngine {
                 int roll = rollDice();
                 rolled = true;
                 printAction(turnId, player.getName(), "Roll " + roll);
-                distributeResources(roll, turnId);
+                if (roll == 7) {
+                    handleRobberRoll(turnId, player);
+                } else {
+                    distributeResources(roll, turnId);
+                }
                 writeStateSnapshot();
                 printAvailableActions(turnId, player, rolled);
                 continue;
@@ -128,7 +152,7 @@ public final class HumanTurnGameEngine {
     }
 
     private int rollDice() {
-        return diceSet.nextRoll();
+        return rollSupplier.getAsInt();
     }
 
     private void printAvailableActions(int turnId, Player player, boolean rolled) {
@@ -248,6 +272,9 @@ public final class HumanTurnGameEngine {
 
     private void distributeResources(int roll, int turnId) {
         for (Tile tile : board.tilesForRoll(roll)) {
+            if (tile.getId() == robberTileId) {
+                continue;
+            }
             ResourceType resourceType = tile.getResourceTypeOpt().orElse(null);
             if (resourceType == null) {
                 continue;
@@ -269,6 +296,108 @@ public final class HumanTurnGameEngine {
         }
     }
 
+    private void handleRobberRoll(int turnId, Player roller) {
+        printAction(turnId, roller.getName(), "Robber activated");
+        for (Player player : players) {
+            int totalCards = player.getTotalResourceCount();
+            if (totalCards <= 7) {
+                continue;
+            }
+            int toDiscard = totalCards / 2;
+            discardRandomCards(player, toDiscard, turnId);
+        }
+        moveRobberToRandomTile(turnId, roller);
+        Tile robberTile = board.getTiles().stream()
+                .filter(tile -> tile.getId() == robberTileId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Robber moved to unknown tile " + robberTileId));
+        stealRandomCardFromRobbedPlayer(turnId, roller, robberTile);
+    }
+
+    private void discardRandomCards(Player player, int count, int turnId) {
+        for (int i = 0; i < count; i++) {
+            ResourceType discarded = drawRandomResourceCard(player);
+            if (discarded == null) {
+                break;
+            }
+            player.spend(Map.of(discarded, 1));
+        }
+        printAction(turnId, player.getName(), "Discard " + count + " cards");
+    }
+
+    private void moveRobberToRandomTile(int turnId, Player roller) {
+        List<Tile> candidates = new ArrayList<>(board.getTiles());
+        if (candidates.isEmpty()) {
+            return;
+        }
+        if (candidates.size() > 1) {
+            candidates.removeIf(tile -> tile.getId() == robberTileId);
+        }
+        Tile target = candidates.get(random.nextInt(candidates.size()));
+        robberTileId = target.getId();
+        printAction(turnId, roller.getName(), "Robber moved to tile " + robberTileId);
+    }
+
+    private void stealRandomCardFromRobbedPlayer(int turnId, Player roller, Tile robberTile) {
+        List<Player> victims = qualifyingRobberVictims(roller, robberTile);
+        if (victims.isEmpty()) {
+            printAction(turnId, roller.getName(), "No eligible player to rob");
+            return;
+        }
+        Player victim = victims.get(random.nextInt(victims.size()));
+        ResourceType stolen = drawRandomResourceCard(victim);
+        if (stolen == null) {
+            printAction(turnId, roller.getName(), "No eligible player to rob");
+            return;
+        }
+        victim.spend(Map.of(stolen, 1));
+        roller.addResource(stolen, 1);
+        printAction(turnId, roller.getName(), "Robbed " + stolen + " from " + victim.getName());
+    }
+
+    private List<Player> qualifyingRobberVictims(Player roller, Tile robberTile) {
+        Set<Player> adjacentOwners = new HashSet<>();
+        for (int nodeId : robberTile.getAdjacentNodeIds()) {
+            board.getNode(nodeId).getOwner().ifPresent(adjacentOwners::add);
+        }
+        List<Player> victims = new ArrayList<>();
+        for (Player player : adjacentOwners) {
+            if (player.equals(roller)) {
+                continue;
+            }
+            if (player.getTotalResourceCount() <= 0) {
+                continue;
+            }
+            victims.add(player);
+        }
+        return victims;
+    }
+
+    private ResourceType drawRandomResourceCard(Player player) {
+        int total = player.getTotalResourceCount();
+        if (total <= 0) {
+            return null;
+        }
+        int picked = random.nextInt(total);
+        int cumulative = 0;
+        for (ResourceType type : ResourceType.values()) {
+            cumulative += player.getResourceCount(type);
+            if (picked < cumulative) {
+                return type;
+            }
+        }
+        return null;
+    }
+
+    private int findInitialRobberTileId() {
+        for (Tile tile : board.getTiles()) {
+            if (tile.getResourceType() == null) {
+                return tile.getId();
+            }
+        }
+        return board.getTiles().get(0).getId();
+    }
+
     private void updateLongestRoad(Player player, int turnId) {
         int newLen = player.calculateLongestRoad(board);
         if (newLen <= currentMaxRoadLength) {
@@ -281,6 +410,7 @@ public final class HumanTurnGameEngine {
         player.setHasLongestRoad(true);
         longestRoadHolder = player;
         currentMaxRoadLength = newLen;
+        printAction(turnId, player.getName(), "Now holds Longest Road (length=" + newLen + ")");
     }
 
     private boolean isRoadConnectedToPlayerNetwork(Player player, Path path) {
@@ -323,6 +453,7 @@ public final class HumanTurnGameEngine {
 
         StringBuilder json = new StringBuilder();
         json.append("{\n");
+        json.append("  \"robberTileId\": ").append(robberTileId).append(",\n");
         json.append("  \"roads\": [\n");
         boolean firstRoad = true;
         for (Path road : roads) {

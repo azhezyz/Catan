@@ -111,25 +111,48 @@ From `org.eclipse.papyrus.javagen.catan`:
 mvn compile
 ```
 
-## Human Mode
-The Maven module also includes a human-playable launcher plus a Python visualizer.
+## Run The Project
 
-From the repository root:
+### 1) Start Human Game (quick launch scripts)
+From repository root:
 
+Windows:
 ```powershell
-./start_game.bat
+.\start_game.bat
 ```
 
-Or from `org.eclipse.papyrus.javagen.catan`:
+PowerShell directly:
+```powershell
+.\start_game.ps1
+```
+
+macOS/Linux:
+```bash
+./start_game.sh
+```
+
+### 2) Start Human Game (traditional Maven + Java)
+From `org.eclipse.papyrus.javagen.catan`:
 
 ```powershell
 mvn -q -DskipTests compile
 java -cp target/classes Catan.HumanGameLauncher game.config visualize/state.json
 ```
 
-Python setup for the visualizer lives under `org.eclipse.papyrus.javagen.catan/visualize/README.md`.
-On macOS/Linux you can initialize it directly with:
+### 3) Start Feature Showcase Demo (text UI)
+This demo shows deterministic feature scenarios (command validation, build flow, longest road, robber flow, blocked production, win trigger).
 
+From `org.eclipse.papyrus.javagen.catan`:
+
+```powershell
+mvn -q -DskipTests compile
+java -cp target/classes Catan.FeatureShowcaseDemo
+```
+
+### 4) Visualizer Setup
+Python setup for the visualizer lives under `org.eclipse.papyrus.javagen.catan/visualize/README.md`.
+
+On macOS/Linux:
 ```bash
 cd org.eclipse.papyrus.javagen.catan/visualize
 ./setup_visualizer.sh
