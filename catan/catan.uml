@@ -201,10 +201,6 @@
       <ownedAttribute xmi:type="uml:Property" xmi:id="_oEI1gAjBEfGWsfYIGjVGyg" name="paths" visibility="private">
         <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/EcorePrimitiveTypes.library.uml#EEList"/>
       </ownedAttribute>
-      <ownedAttribute xmi:type="uml:Property" xmi:id="_ZpI_MAj7EfGsTqt_Amih7A" name="node" type="_JURh0Ai0EfG6Z4KKaubTjQ" aggregation="composite" association="_ZpF74Aj7EfGsTqt_Amih7A">
-        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_okT-AAj7EfGsTqt_Amih7A" name="LiteralInteger1" value="54"/>
-        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_okVMIAj7EfGsTqt_Amih7A" name="LiteralUnlimitedNatural1" value="54"/>
-      </ownedAttribute>
       <ownedOperation xmi:type="uml:Operation" xmi:id="_qxIAMAjBEfGWsfYIGjVGyg" name="Board"/>
       <ownedOperation xmi:type="uml:Operation" xmi:id="_s-Yh8AjBEfGWsfYIGjVGyg" name="indexById"/>
       <ownedOperation xmi:type="uml:Operation" xmi:id="_t8yD4AjBEfGWsfYIGjVGyg" name="buildPathAdjacency"/>
@@ -485,6 +481,87 @@
         <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_ZpIYIQj7EfGsTqt_Amih7A" key="nature" value="UML_Nature"/>
       </eAnnotations>
       <ownedEnd xmi:type="uml:Property" xmi:id="_ZpJmQQj7EfGsTqt_Amih7A" name="board" type="_u2i7QAiyEfG6Z4KKaubTjQ" association="_ZpF74Aj7EfGsTqt_Amih7A"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_ZpI_MAj7EfGsTqt_Amih7A" name="node" type="_JURh0Ai0EfG6Z4KKaubTjQ" aggregation="composite" association="_ZpF74Aj7EfGsTqt_Amih7A">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_okT-AAj7EfGsTqt_Amih7A" name="LiteralInteger1" value="54"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_okVMIAj7EfGsTqt_Amih7A" name="LiteralUnlimitedNatural1" value="54"/>
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_4ypBgBmIEfGvbsI3s_sh3Q" name="HumanTurnGameEngine">
+      <generalization xmi:type="uml:Generalization" xmi:id="_MQ9bYBmJEfGvbsI3s_sh3Q" general="_McudUAiwEfG1boJ-ECKFew"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_gj1esBmJEfGvbsI3s_sh3Q" name="HumanGameLauncher"/>
+    <packagedElement xmi:type="uml:Association" xmi:id="_qow1YBmLEfGvbsI3s_sh3Q" memberEnd="_qoyDghmLEfGvbsI3s_sh3Q _qoyqkRmLEfGvbsI3s_sh3Q">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_qoyDgBmLEfGvbsI3s_sh3Q" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_qoyDgRmLEfGvbsI3s_sh3Q" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_qoyqkRmLEfGvbsI3s_sh3Q" name="humangamelauncher" type="_gj1esBmJEfGvbsI3s_sh3Q" association="_qow1YBmLEfGvbsI3s_sh3Q"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_qoyDghmLEfGvbsI3s_sh3Q" name="humanturngameengine" type="_4ypBgBmIEfGvbsI3s_sh3Q" aggregation="composite" association="_qow1YBmLEfGvbsI3s_sh3Q">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_3HSLkBmLEfGvbsI3s_sh3Q" name="LiteralInteger1" value="1"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_3HrNIBmLEfGvbsI3s_sh3Q" name="LiteralUnlimitedNatural1" value="1"/>
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_7ZuRIBmLEfGvbsI3s_sh3Q" name="HumanGameConifg"/>
+    <packagedElement xmi:type="uml:Association" xmi:id="_AGCPQBmMEfGvbsI3s_sh3Q" memberEnd="_AGErghmMEfGvbsI3s_sh3Q _AGFSkhmMEfGvbsI3s_sh3Q">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_AGErgBmMEfGvbsI3s_sh3Q" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_AGErgRmMEfGvbsI3s_sh3Q" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_AGFSkhmMEfGvbsI3s_sh3Q" name="humangamelauncher" type="_gj1esBmJEfGvbsI3s_sh3Q" association="_AGCPQBmMEfGvbsI3s_sh3Q"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_AGErghmMEfGvbsI3s_sh3Q" name="humangameconifg" type="_7ZuRIBmLEfGvbsI3s_sh3Q" aggregation="composite" association="_AGCPQBmMEfGvbsI3s_sh3Q">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Cpj78BmMEfGvbsI3s_sh3Q" name="LiteralInteger1" value="1"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_CpkjABmMEfGvbsI3s_sh3Q" name="LiteralUnlimitedNatural1" value="1"/>
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_Qn--oBmMEfGvbsI3s_sh3Q" memberEnd="_QoAMwhmMEfGvbsI3s_sh3Q _QoAz0hmMEfGvbsI3s_sh3Q">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_QoAMwBmMEfGvbsI3s_sh3Q" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_QoAMwRmMEfGvbsI3s_sh3Q" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_QoAz0hmMEfGvbsI3s_sh3Q" name="humanturngameengine" type="_4ypBgBmIEfGvbsI3s_sh3Q" association="_Qn--oBmMEfGvbsI3s_sh3Q"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_QoAMwhmMEfGvbsI3s_sh3Q" name="diceset" type="_bNpT8AiwEfG1boJ-ECKFew" aggregation="shared" association="_Qn--oBmMEfGvbsI3s_sh3Q">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_aYzYcBmMEfGvbsI3s_sh3Q" name="LiteralInteger1" value="1"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_aYz_gBmMEfGvbsI3s_sh3Q" name="LiteralUnlimitedNatural1" value="1"/>
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_dluAYBmMEfGvbsI3s_sh3Q" memberEnd="_dlv1khmMEfGvbsI3s_sh3Q _dlwcohmMEfGvbsI3s_sh3Q">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_dlv1kBmMEfGvbsI3s_sh3Q" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_dlv1kRmMEfGvbsI3s_sh3Q" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_dlwcohmMEfGvbsI3s_sh3Q" name="humanturngameengine" type="_4ypBgBmIEfGvbsI3s_sh3Q" association="_dluAYBmMEfGvbsI3s_sh3Q"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_dlv1khmMEfGvbsI3s_sh3Q" name="player" type="_hSTTIAiyEfG6Z4KKaubTjQ" aggregation="shared" association="_dluAYBmMEfGvbsI3s_sh3Q">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_oXs8QBmMEfGvbsI3s_sh3Q" name="LiteralInteger1" value="4"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_oXtjUBmMEfGvbsI3s_sh3Q" name="LiteralUnlimitedNatural1" value="4"/>
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_sM4eEBmMEfGvbsI3s_sh3Q" memberEnd="_sM5sMhmMEfGvbsI3s_sh3Q _sM6TQBmMEfGvbsI3s_sh3Q">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_sM5sMBmMEfGvbsI3s_sh3Q" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_sM5sMRmMEfGvbsI3s_sh3Q" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_sM6TQBmMEfGvbsI3s_sh3Q" name="humanturngameengine" type="_4ypBgBmIEfGvbsI3s_sh3Q" association="_sM4eEBmMEfGvbsI3s_sh3Q"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_sM5sMhmMEfGvbsI3s_sh3Q" name="board" type="_u2i7QAiyEfG6Z4KKaubTjQ" aggregation="shared" association="_sM4eEBmMEfGvbsI3s_sh3Q">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_xnE14BmMEfGvbsI3s_sh3Q" name="LiteralInteger1" value="1"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_xnFc8BmMEfGvbsI3s_sh3Q" name="LiteralUnlimitedNatural1" value="1"/>
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_fTXYgBmNEfGvbsI3s_sh3Q" name="StandardGameSetup"/>
+    <packagedElement xmi:type="uml:Association" xmi:id="_l8V3oBmNEfGvbsI3s_sh3Q" memberEnd="_l8XFwhmNEfGvbsI3s_sh3Q _l8XFxRmNEfGvbsI3s_sh3Q">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_l8XFwBmNEfGvbsI3s_sh3Q" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_l8XFwRmNEfGvbsI3s_sh3Q" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_l8XFxRmNEfGvbsI3s_sh3Q" name="humangamelauncher" type="_gj1esBmJEfGvbsI3s_sh3Q" association="_l8V3oBmNEfGvbsI3s_sh3Q"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_l8XFwhmNEfGvbsI3s_sh3Q" name="standardgamesetup" type="_fTXYgBmNEfGvbsI3s_sh3Q" aggregation="composite" association="_l8V3oBmNEfGvbsI3s_sh3Q">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_r9BnsBmNEfGvbsI3s_sh3Q" name="LiteralInteger1" value="1"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_r9COwBmNEfGvbsI3s_sh3Q" name="LiteralUnlimitedNatural1" value="1"/>
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_PzffQBmPEfGvbsI3s_sh3Q" name="BuildPlanner"/>
+    <packagedElement xmi:type="uml:Association" xmi:id="_fFGBEBmPEfGvbsI3s_sh3Q" memberEnd="_fFKSgBmPEfGvbsI3s_sh3Q _fFK5kBmPEfGvbsI3s_sh3Q">
+      <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_fFJrcBmPEfGvbsI3s_sh3Q" source="org.eclipse.papyrus">
+        <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_fFJrcRmPEfGvbsI3s_sh3Q" key="nature" value="UML_Nature"/>
+      </eAnnotations>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_fFK5kBmPEfGvbsI3s_sh3Q" name="buildplanner" type="_PzffQBmPEfGvbsI3s_sh3Q" association="_fFGBEBmPEfGvbsI3s_sh3Q"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_fFKSgBmPEfGvbsI3s_sh3Q" name="actiondecision" type="_3jA0wAi1EfG6Z4KKaubTjQ" aggregation="composite" association="_fFGBEBmPEfGvbsI3s_sh3Q">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_hzL_ABmPEfGvbsI3s_sh3Q" name="LiteralInteger1"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_hzL_ARmPEfGvbsI3s_sh3Q" name="LiteralUnlimitedNatural1" value="*"/>
+      </ownedEnd>
     </packagedElement>
     <profileApplication xmi:type="uml:ProfileApplication" xmi:id="_QwI1cAi_EfGWsfYIGjVGyg">
       <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_QwLRsAi_EfGWsfYIGjVGyg" source="http://www.eclipse.org/uml2/2.0.0/UML">

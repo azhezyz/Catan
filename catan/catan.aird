@@ -10,6 +10,7 @@
   <semanticResources>pathmap://PapyrusJava_PROFILES/PapyrusJava.profile.uml</semanticResources>
   <semanticResources>pathmap://Codegen_PROFILES/Codegen.profile.uml</semanticResources>
   <semanticResources>pathmap://Codegen_PROFILES/languages.uml</semanticResources>
+  <semanticResources>catan.uml</semanticResources>
   <ownedViews xmi:type="viewpoint:DView" uid="_4i5MIAivEfG1boJ-ECKFew">
     <viewpoint xmi:type="description:Viewpoint" href="platform:/plugin/org.eclipse.papyrus.sirius.uml.diagram.clazz/description/papyrus_class.odesign#//@ownedViewpoints[name='ClassDiagram']"/>
   </ownedViews>
