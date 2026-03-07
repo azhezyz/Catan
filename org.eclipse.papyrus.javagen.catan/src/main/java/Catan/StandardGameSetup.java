@@ -55,7 +55,7 @@ public final class StandardGameSetup {
                 new Node(17, Set.of(4, 13, 12), Set.of(15, 39, 18)),
                 new Node(18, Set.of(4, 14, 13), Set.of(17, 16, 40)),
                 new Node(19, Set.of(5, 16, 15), Set.of(21, 20, 46)),
-                new Node(20, Set.of(5, 6, 16), Set.of(0, 22, 10)),
+                new Node(20, Set.of(5, 6, 16), Set.of(0, 22, 19)),
                 new Node(21, Set.of(5, 14, 15), Set.of(16, 43, 19)),
                 new Node(22, Set.of(6, 16, 17), Set.of(20, 23, 49)),
                 new Node(23, Set.of(6, 17, 18), Set.of(6, 22, 52)),

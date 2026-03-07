@@ -12,6 +12,65 @@ from catanatron.models.enums import BRICK, CITY, ORE, SETTLEMENT, SHEEP, WHEAT, 
 from catanatron.models.map import CatanMap, LandTile, MapTemplate, initialize_tiles
 from catanatron.models.player import Color, Player
 
+# Java engine and catanatron do not share the same node-id layout.
+# This mapping translates Java node IDs (state.json) to catanatron node IDs.
+JAVA_TO_CATAN_NODE_ID = {
+    0: 1,
+    1: 2,
+    2: 3,
+    3: 4,
+    4: 5,
+    5: 0,
+    6: 6,
+    7: 7,
+    8: 8,
+    9: 9,
+    10: 10,
+    11: 11,
+    12: 12,
+    13: 14,
+    14: 15,
+    15: 13,
+    16: 17,
+    17: 18,
+    18: 16,
+    19: 20,
+    20: 21,
+    21: 19,
+    22: 22,
+    23: 23,
+    24: 24,
+    25: 25,
+    26: 26,
+    27: 27,
+    28: 28,
+    29: 29,
+    30: 30,
+    31: 31,
+    32: 32,
+    33: 33,
+    34: 34,
+    35: 36,
+    36: 37,
+    37: 35,
+    38: 39,
+    39: 38,
+    40: 41,
+    41: 42,
+    42: 40,
+    43: 44,
+    44: 43,
+    45: 45,
+    46: 47,
+    47: 46,
+    48: 48,
+    49: 49,
+    50: 50,
+    51: 51,
+    52: 52,
+    53: 53,
+}
+
 
 class CatanBoardVisualizer:
     def __init__(self):
@@ -89,9 +148,27 @@ class CatanBoardVisualizer:
     def _apply_state_to_board(self, board: Board) -> None:
         board.buildings.clear()
         board.roads.clear()
+        valid_nodes = set(board.map.land_nodes)
+        valid_edges = set()
+        for tile in board.map.land_tiles.values():
+            for edge in tile.edges.values():
+                valid_edges.add(tuple(sorted(edge)))
+
+        robber_tile_id = self.state_data.get("robberTileId")
+        if robber_tile_id is not None:
+            for coordinate, tile in board.map.land_tiles.items():
+                if tile.id == robber_tile_id:
+                    board.robber_coordinate = coordinate
+                    break
 
         for building_data in self.state_data.get("buildings", []):
-            node_id = building_data["node"]
+            node_id = self._map_node_id(building_data["node"])
+            if node_id not in valid_nodes:
+                print(
+                    f"Skipping building on unknown mapped node {node_id} "
+                    f"(source={building_data['node']})."
+                )
+                continue
             color = self._parse_color(building_data["owner"])
             building_type = building_data["type"]
             if building_type == "SETTLEMENT":
@@ -102,11 +179,21 @@ class CatanBoardVisualizer:
                 raise ValueError(f"Unknown building type: {building_type}")
 
         for road_data in self.state_data.get("roads", []):
-            a = road_data["a"]
-            b = road_data["b"]
+            a = self._map_node_id(road_data["a"])
+            b = self._map_node_id(road_data["b"])
+            edge = tuple(sorted((a, b)))
+            if edge not in valid_edges:
+                print(
+                    f"Skipping road on non-edge {a}-{b} "
+                    f"(source={road_data['a']}-{road_data['b']})."
+                )
+                continue
             color = self._parse_color(road_data["owner"])
             board.roads[(a, b)] = color
             board.roads[(b, a)] = color
+
+    def _map_node_id(self, node_id: int) -> int:
+        return JAVA_TO_CATAN_NODE_ID.get(node_id, node_id)
 
     def build_game(self) -> Game:
         catan_map = self._create_map_from_json()
