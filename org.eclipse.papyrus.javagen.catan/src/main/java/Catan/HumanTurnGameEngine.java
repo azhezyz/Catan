@@ -298,20 +298,12 @@ public final class HumanTurnGameEngine {
 
     private void handleRobberRoll(int turnId, Player roller) {
         printAction(turnId, roller.getName(), "Robber activated");
-        for (Player player : players) {
-            int totalCards = player.getTotalResourceCount();
-            if (totalCards <= 7) {
-                continue;
-            }
-            int toDiscard = totalCards / 2;
-            discardRandomCards(player, toDiscard, turnId);
+        int rollerCards = roller.getTotalResourceCount();
+        if (rollerCards > 7) {
+            int toDiscard = rollerCards / 2;
+            discardRandomCards(roller, toDiscard, turnId);
         }
-        moveRobberToRandomTile(turnId, roller);
-        Tile robberTile = board.getTiles().stream()
-                .filter(tile -> tile.getId() == robberTileId)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Robber moved to unknown tile " + robberTileId));
-        stealRandomCardFromRobbedPlayer(turnId, roller, robberTile);
+        moveRobberAndStealFromRandomPlayer(turnId, roller);
     }
 
     private void discardRandomCards(Player player, int count, int turnId) {
@@ -325,26 +317,35 @@ public final class HumanTurnGameEngine {
         printAction(turnId, player.getName(), "Discard " + count + " cards");
     }
 
-    private void moveRobberToRandomTile(int turnId, Player roller) {
-        List<Tile> candidates = new ArrayList<>(board.getTiles());
-        if (candidates.isEmpty()) {
-            return;
+    private void moveRobberAndStealFromRandomPlayer(int turnId, Player roller) {
+        List<Player> victims = new ArrayList<>();
+        for (Player player : players) {
+            if (player.equals(roller)) {
+                continue;
+            }
+            if (player.getTotalResourceCount() <= 0) {
+                continue;
+            }
+            if (tileIdsAdjacentToPlayer(player).isEmpty()) {
+                continue;
+            }
+            victims.add(player);
         }
-        if (candidates.size() > 1) {
-            candidates.removeIf(tile -> tile.getId() == robberTileId);
-        }
-        Tile target = candidates.get(random.nextInt(candidates.size()));
-        robberTileId = target.getId();
-        printAction(turnId, roller.getName(), "Robber moved to tile " + robberTileId);
-    }
-
-    private void stealRandomCardFromRobbedPlayer(int turnId, Player roller, Tile robberTile) {
-        List<Player> victims = qualifyingRobberVictims(roller, robberTile);
         if (victims.isEmpty()) {
             printAction(turnId, roller.getName(), "No eligible player to rob");
             return;
         }
+
         Player victim = victims.get(random.nextInt(victims.size()));
+        List<Integer> victimTileIds = tileIdsAdjacentToPlayer(victim);
+        List<Integer> moveCandidates = new ArrayList<>(victimTileIds);
+        if (moveCandidates.size() > 1) {
+            moveCandidates.removeIf(tileId -> tileId == robberTileId);
+        }
+        int targetTileId = moveCandidates.get(random.nextInt(moveCandidates.size()));
+        robberTileId = targetTileId;
+        printAction(turnId, roller.getName(), "Robber moved to tile " + robberTileId + " (" + victim.getName() + ")");
+
         ResourceType stolen = drawRandomResourceCard(victim);
         if (stolen == null) {
             printAction(turnId, roller.getName(), "No eligible player to rob");
@@ -355,22 +356,15 @@ public final class HumanTurnGameEngine {
         printAction(turnId, roller.getName(), "Robbed " + stolen + " from " + victim.getName());
     }
 
-    private List<Player> qualifyingRobberVictims(Player roller, Tile robberTile) {
-        Set<Player> adjacentOwners = new HashSet<>();
-        for (int nodeId : robberTile.getAdjacentNodeIds()) {
-            board.getNode(nodeId).getOwner().ifPresent(adjacentOwners::add);
-        }
-        List<Player> victims = new ArrayList<>();
-        for (Player player : adjacentOwners) {
-            if (player.equals(roller)) {
+    private List<Integer> tileIdsAdjacentToPlayer(Player player) {
+        Set<Integer> tileIds = new HashSet<>();
+        for (Node node : board.getNodes()) {
+            if (!node.isOwnedBy(player)) {
                 continue;
             }
-            if (player.getTotalResourceCount() <= 0) {
-                continue;
-            }
-            victims.add(player);
+            tileIds.addAll(node.getAdjacentTileIds());
         }
-        return victims;
+        return new ArrayList<>(tileIds);
     }
 
     private ResourceType drawRandomResourceCard(Player player) {
