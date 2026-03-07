@@ -1,13 +1,14 @@
 {
   "robberTileId": 16,
   "roads": [
-    { "a": 5, "b": 13, "owner": "RED" },
     { "a": 6, "b": 7, "owner": "BLUE" },
     { "a": 8, "b": 9, "owner": "ORANGE" },
-    { "a": 10, "b": 11, "owner": "BLUE" },
-    { "a": 14, "b": 15, "owner": "WHITE" },
-    { "a": 16, "b": 18, "owner": "RED" },
-    { "a": 19, "b": 20, "owner": "ORANGE" },
+    { "a": 3, "b": 12, "owner": "RED" },
+    { "a": 11, "b": 10, "owner": "BLUE" },
+    { "a": 15, "b": 14, "owner": "WHITE" },
+    { "a": 13, "b": 12, "owner": "RED" },
+    { "a": 18, "b": 16, "owner": "RED" },
+    { "a": 21, "b": 19, "owner": "ORANGE" },
     { "a": 22, "b": 23, "owner": "WHITE" }
   ],
   "buildings": [
