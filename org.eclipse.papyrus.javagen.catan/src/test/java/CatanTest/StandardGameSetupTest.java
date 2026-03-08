@@ -6,13 +6,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.w3c.dom.Node;
 
 import Catan.Board;
 import Catan.Player;
 import Catan.ResourceType;
 import Catan.StandardGameSetup;
 import Catan.Tile;
+import Catan.Node;
+import Catan.Path;
 
 class StandardGameSetupTest {
 
