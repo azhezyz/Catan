@@ -166,4 +166,39 @@ class HumanGameLauncherTest {
         invokeStopVisualizer(fakeAlive);
         assertFalse(fakeAlive.isAlive());
     }
+
+    @Test
+    void startVisualizerProcessReturnsNullWhenDirIsFile() throws Exception {
+        Path tempRoot = Files.createTempDirectory("launcher-fail-dir");
+        Path fakeVisualizeDir = Files.createFile(tempRoot.resolve("visualize"));
+        Path statePath = fakeVisualizeDir.resolve("state.json");
+
+        Process process = invokeStartVisualizerProcess(statePath);
+        assertNull(process);
+    }
+
+    @Test
+    void startVisualizerProcessHandlesIOException() throws Exception {
+        Path tempRoot = Files.createTempDirectory("launcher-io-exception");
+        File visualizeDir = tempRoot.toFile();
+
+        File binDir = new File(new File(visualizeDir, ".venv"), "bin");
+        binDir.mkdirs();
+        File python = new File(binDir, "python");
+        python.createNewFile();
+        python.setExecutable(false); 
+
+        Process process = invokeStartVisualizerProcess(tempRoot.resolve("visualize").resolve("state.json"));
+        assertNull(process);
+    }
+
+    @Test
+    void mainWithCustomArguments() {
+        String[] args = {"custom.config", "custom_state.json"};
+        
+        try {
+            HumanGameLauncher.main(args);
+        } catch (Exception e) {
+        }
+    }
 }

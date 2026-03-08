@@ -3,8 +3,10 @@ package CatanTest;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Node;
 
 import Catan.Board;
 import Catan.Player;
@@ -92,5 +94,54 @@ class StandardGameSetupTest {
         assertTrue(board.getNode(9).isOwnedBy(charlie));
         assertTrue(board.getNode(15).isOwnedBy(diana));
         assertTrue(board.getNode(23).isOwnedBy(diana));
+    }
+
+    @Test
+    void seedInitialStateTriggersFallbackBFS() {
+        Board board = StandardGameSetup.buildFullBoard();
+        Player alice = new Player("Alice");
+        
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Method method = StandardGameSetup.class.getDeclaredMethod(
+                "claimRoadByNodes", Board.class, Player.class, int.class, int.class);
+            method.setAccessible(true);
+            method.invoke(null, board, alice, 18, 5);
+        });
+        
+        assertFalse(alice.getRoadPathIds().isEmpty());
+    }
+
+    @Test
+    void claimRoadByNodesThrowsExceptionForDisconnectedNodes() throws Exception {
+        Node n1 = new Node(0, Set.of(0), Set.of());
+        Node n2 = new Node(1, Set.of(1), Set.of());
+        Tile t1 = new Tile(0, ResourceType.WOOD, 5, Set.of(0));
+        Tile t2 = new Tile(1, ResourceType.BRICK, 6, Set.of(1));
+        Board brokenBoard = new Board(List.of(t1, t2), List.of(n1, n2), List.of());
+
+        Player alice = new Player("Alice");
+
+        java.lang.reflect.Method method = StandardGameSetup.class.getDeclaredMethod(
+            "claimRoadByNodes", Board.class, Player.class, int.class, int.class);
+        method.setAccessible(true);
+
+        java.lang.reflect.InvocationTargetException ite = assertThrows(
+            java.lang.reflect.InvocationTargetException.class, 
+            () -> method.invoke(null, brokenBoard, alice, 0, 1)
+        );
+        assertTrue(ite.getCause() instanceof IllegalArgumentException);
+        assertTrue(ite.getCause().getMessage().contains("No road placement found"));
+    }
+
+    @Test
+    void findFallbackPathReturnsNullForUnreachableNode() throws Exception {
+        Board board = StandardGameSetup.buildFullBoard();
+        
+        java.lang.reflect.Method method = StandardGameSetup.class.getDeclaredMethod(
+            "findFallbackPathId", Board.class, int.class, int.class);
+        method.setAccessible(true);
+
+        Object result = method.invoke(null, board, 0, 999);
+        assertNull(result);
     }
 }

@@ -2,11 +2,13 @@ package CatanTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.beans.Transient;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -188,5 +190,73 @@ class HumanTurnGameEngineTest {
         assertTrue(log.contains("Build road 0,1"));
         assertTrue(log.contains("Build city 0"));
         assertTrue(log.contains(": Go"));
+    }
+
+    @Test
+    void runGameEndsImmediatelyOnWin() throws Exception {
+        Board board = StandardGameSetup.buildFullBoard();
+        Player alice = new Player("Alice");
+        for (int i = 0; i < 5; i++) {
+                board.getNode(i).claim(alice);
+                alice.addSettlement(i);
+                board.getNode(i).upgradeToCity(alice);
+                alice.addCity(i);
+        }
+
+        java.nio.file.Path state = Files.createTempFile("win-test", ".json");
+        ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        HumanTurnGameEngine engine = new HumanTurnGameEngine(
+                board, List.of(alice), new Scanner("Roll\nGo\n"),
+                new PrintStream(sink), state
+        );
+
+        engine.runGame(10);
+        String log = sink.toString();
+        assertTrue(log.contains("Win with 10 VP"));
+    }
+
+    @Test
+    void buildCommandsFailWhenResourcesMissing() throws Exception {
+        Board board = StandardGameSetup.buildFullBoard();
+        Player alice = new Player("Alice");
+        board.getNode(0).claim(alice);
+        alice.addSettlement(0);
+
+        String input = "Roll\nBuild settlement 2\nBuild city 0\nBuild road 0,1\nGo\n";
+    
+        java.nio.file.Path state = Files.createTempFile("fail-build", ".json");
+        ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        HumanTurnGameEngine engine = new HumanTurnGameEngine(
+                board, List.of(alice), new Scanner(input),
+                new PrintStream(sink), state
+        );
+
+        engine.runGame(1);
+        String log = sink.toString();
+        assertTrue(log.contains("failed: insufficient resources"));
+    }
+
+    @Test
+    void robberTriggersDiscardAndSteal() throws Exception {
+        Board board = StandardGameSetup.buildFullBoard();
+        Player alice = new Player("Alice");
+        Player bob = new Player("Bob");
+        
+        for (int i = 0; i < 10; i++) bob.addResource(ResourceType.WOOD, 1);
+        board.getNode(0).claim(bob); 
+        bob.addSettlement(0);
+
+        java.nio.file.Path state = Files.createTempFile("robber-test", ".json");
+        ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        
+        HumanTurnGameEngine engine = new HumanTurnGameEngine(
+                board, List.of(alice, bob), new Scanner("Roll\nGo\n"),
+                new PrintStream(sink), state, () -> 7, new Random(0)
+        );
+
+        engine.runGame(1);
+        String log = sink.toString();
+        assertTrue(log.contains("Robber activated"));
+        assertTrue(log.contains("Discard 5 cards"));
     }
 }
