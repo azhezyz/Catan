@@ -118,7 +118,10 @@ class StandardGameSetupTest {
         Node n2 = new Node(1, Set.of(1), Set.of());
         Tile t1 = new Tile(0, ResourceType.WOOD, 5, Set.of(0));
         Tile t2 = new Tile(1, ResourceType.BRICK, 6, Set.of(1));
-        Board brokenBoard = new Board(List.of(t1, t2), List.of(n1, n2), List.of());
+        
+        Path dummyPath = new Path(99, 0, 5);
+        
+        Board brokenBoard = new Board(List.of(t1, t2), List.of(n1, n2), List.of(dummyPath));
 
         Player alice = new Player("Alice");
 
