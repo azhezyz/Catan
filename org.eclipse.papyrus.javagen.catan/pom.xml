@@ -7,7 +7,7 @@
     <sonar.organization>azhezyz</sonar.organization>
     <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     <sonar.exclusions>**/src-gen/**,**/scr-gen/**</sonar.exclusions>
-    <sonar.coverage.exclusions>**/Catan/Demonstrator.java,**/Catan/GameEngine.java,**/src-gen/**,**/scr-gen/**</sonar.coverage.exclusions>
+    <sonar.coverage.exclusions>**/Catan/Demonstrator.java,**/Catan/GameEngine.java,**/Catan/FeatureShowcaseDemo.java,**/src-gen/**,**/scr-gen/**</sonar.coverage.exclusions>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <surefire.version>3.5.2</surefire.version>
