@@ -21,6 +21,7 @@ import Catan.Path;
 import Catan.Player;
 import Catan.ResourceType;
 import Catan.Tile;
+import Catan.StandardGameSetup;
 
 class HumanTurnGameEngineTest {
 
