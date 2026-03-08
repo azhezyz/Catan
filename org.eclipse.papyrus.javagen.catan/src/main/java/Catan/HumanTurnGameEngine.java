@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -15,9 +16,17 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.function.IntSupplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class HumanTurnGameEngine {
     private static final List<String> COLOR_ORDER = List.of("RED", "BLUE", "ORANGE", "WHITE");
+    private static final Pattern ROLL_COMMAND = Pattern.compile("(?i)^roll$");
+    private static final Pattern LIST_COMMAND = Pattern.compile("(?i)^list$");
+    private static final Pattern ACTIONS_COMMAND = Pattern.compile("(?i)^actions$");
+    private static final Pattern GO_COMMAND = Pattern.compile("(?i)^go$");
+    private static final Pattern BUILD_COMMAND = Pattern.compile("(?i)^build\\s*(.*)$");
+    private static final Pattern BUILD_KIND_COMMAND = Pattern.compile("(?i)^(\\S+)(?:\\s+(.*))?$");
 
     private final Board board;
     private final List<Player> players;
@@ -97,8 +106,7 @@ public final class HumanTurnGameEngine {
                 continue;
             }
 
-            String lower = line.toLowerCase();
-            if (lower.equals("roll")) {
+            if (ROLL_COMMAND.matcher(line).matches()) {
                 if (rolled) {
                     printAction(turnId, player.getName(), "Invalid: already rolled");
                     continue;
@@ -116,28 +124,29 @@ public final class HumanTurnGameEngine {
                 continue;
             }
 
-            if (lower.equals("list")) {
+            if (LIST_COMMAND.matcher(line).matches()) {
                 printAction(turnId, player.getName(), "List " + formatResources(player));
                 continue;
             }
 
-            if (lower.equals("actions")) {
+            if (ACTIONS_COMMAND.matcher(line).matches()) {
                 printAvailableActions(turnId, player, rolled);
                 continue;
             }
 
-            if (lower.startsWith("build")) {
+            Matcher buildMatcher = BUILD_COMMAND.matcher(line);
+            if (buildMatcher.matches()) {
                 if (!rolled) {
                     printAction(turnId, player.getName(), "Invalid: roll first");
                     continue;
                 }
-                handleBuildCommand(turnId, player, line);
+                handleBuildCommand(turnId, player, buildMatcher.group(1));
                 writeStateSnapshot();
                 printAvailableActions(turnId, player, rolled);
                 continue;
             }
 
-            if (lower.equals("go")) {
+            if (GO_COMMAND.matcher(line).matches()) {
                 if (!rolled) {
                     printAction(turnId, player.getName(), "Invalid: roll first");
                     continue;
@@ -184,16 +193,21 @@ public final class HumanTurnGameEngine {
         printAction(turnId, player.getName(), "Available actions: " + String.join(" | ", actions));
     }
 
-    private void handleBuildCommand(int turnId, Player player, String line) {
-        String payload = line.substring(5).trim();
+    private void handleBuildCommand(int turnId, Player player, String payload) {
+        payload = payload == null ? "" : payload.trim();
         if (payload.isEmpty()) {
             printAction(turnId, player.getName(), "Invalid build syntax");
             return;
         }
 
-        String[] firstSplit = payload.split("\\s+", 2);
-        String kind = firstSplit[0].toLowerCase();
-        String args = firstSplit.length > 1 ? firstSplit[1].trim() : "";
+        Matcher buildKindMatcher = BUILD_KIND_COMMAND.matcher(payload);
+        if (!buildKindMatcher.matches()) {
+            printAction(turnId, player.getName(), "Invalid build syntax");
+            return;
+        }
+
+        String kind = buildKindMatcher.group(1).toLowerCase(Locale.ROOT);
+        String args = buildKindMatcher.group(2) == null ? "" : buildKindMatcher.group(2).trim();
 
         try {
             switch (kind) {

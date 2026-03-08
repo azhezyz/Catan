@@ -150,4 +150,43 @@ class HumanTurnGameEngineTest {
         assertTrue(json.contains("\"owner\": \"RED\""));
         assertTrue(json.contains("\"type\": \"CITY\""));
     }
+
+    @Test
+    void runGameParsesRegexCommandsWithMixedCaseAndFlexibleSpacing() throws Exception {
+        Board board = minimalBoard();
+        Player alice = new Player("alice");
+        board.getNode(0).claim(alice);
+        alice.addSettlement(0);
+        alice.addResource(ResourceType.WHEAT, 10);
+        alice.addResource(ResourceType.ORE, 10);
+        alice.addResource(ResourceType.WOOD, 10);
+        alice.addResource(ResourceType.BRICK, 10);
+        alice.addResource(ResourceType.SHEEP, 10);
+
+        String input = String.join("\n",
+                "aCtIoNs",
+                "rOlL",
+                "bUiLd    road   0 , 1",
+                "BuIlD   cItY   0",
+                "gO"
+        ) + "\n";
+
+        java.nio.file.Path state = Files.createTempFile("state-regex", ".json");
+        ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        HumanTurnGameEngine engine = new HumanTurnGameEngine(
+                board,
+                List.of(alice),
+                new Scanner(input),
+                new PrintStream(sink, true, StandardCharsets.UTF_8),
+                state
+        );
+
+        engine.runGame(1);
+
+        String log = sink.toString(StandardCharsets.UTF_8);
+        assertTrue(log.contains("Available actions: Roll | List | Actions"));
+        assertTrue(log.contains("Build road 0,1"));
+        assertTrue(log.contains("Build city 0"));
+        assertTrue(log.contains(": Go"));
+    }
 }
