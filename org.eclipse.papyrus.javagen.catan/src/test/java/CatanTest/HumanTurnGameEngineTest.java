@@ -243,9 +243,11 @@ class HumanTurnGameEngineTest {
         Player alice = new Player("Alice");
         Player bob = new Player("Bob");
         
-        for (int i = 0; i < 10; i++) bob.addResource(ResourceType.WOOD, 1);
-        board.getNode(0).claim(bob); 
+        for (int i = 0; i < 10; i++) alice.addResource(ResourceType.WOOD, 1);
+        
+        board.getNode(0).claim(bob);
         bob.addSettlement(0);
+        bob.addResource(ResourceType.SHEEP, 1);
 
         java.nio.file.Path state = Files.createTempFile("robber-test", ".json");
         ByteArrayOutputStream sink = new ByteArrayOutputStream();
@@ -257,7 +259,9 @@ class HumanTurnGameEngineTest {
 
         engine.runGame(1);
         String log = sink.toString();
+        
         assertTrue(log.contains("Robber activated"));
-        assertTrue(log.contains("Discard 5 cards"));
+        assertTrue(log.contains("Discard 5 cards")); 
+        assertTrue(log.contains("Robbed SHEEP from Bob")); 
     }
 }
