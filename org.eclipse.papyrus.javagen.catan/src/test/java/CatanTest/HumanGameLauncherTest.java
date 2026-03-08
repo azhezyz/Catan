@@ -193,12 +193,22 @@ class HumanGameLauncherTest {
     }
 
     @Test
-    void mainWithCustomArguments() {
-        String[] args = {"custom.config", "custom_state.json"};
+    void mainWithCustomArguments() throws Exception {
+        String simulatedInput = "\n\n\n\nRoll\nGo\nRoll\nGo\n"; 
+        java.io.InputStream originalIn = System.in;
         
         try {
-            HumanGameLauncher.main(args);
+            System.setIn(new java.io.ByteArrayInputStream(simulatedInput.getBytes()));
+            
+            Path tempConfig = Files.createTempFile("game", ".config");
+            Files.writeString(tempConfig, "turns: 1");
+            
+            String[] args = {tempConfig.toAbsolutePath().toString(), "visualize/state.json"};
+            
+            HumanGameLauncher.main(args); 
         } catch (Exception e) {
+        } finally {
+            System.setIn(originalIn);
         }
     }
 }

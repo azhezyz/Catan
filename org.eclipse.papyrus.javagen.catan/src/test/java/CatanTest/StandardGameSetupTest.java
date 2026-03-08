@@ -114,14 +114,16 @@ class StandardGameSetupTest {
 
     @Test
     void claimRoadByNodesThrowsExceptionForDisconnectedNodes() throws Exception {
-        Node n1 = new Node(0, Set.of(0), Set.of());
+        Node n1 = new Node(0, Set.of(0), Set.of(2)); 
         Node n2 = new Node(1, Set.of(1), Set.of());
-        Tile t1 = new Tile(0, ResourceType.WOOD, 5, Set.of(0));
+        Node n3 = new Node(2, Set.of(0), Set.of(0)); 
+
+        Tile t1 = new Tile(0, ResourceType.WOOD, 5, Set.of(0, 2));
         Tile t2 = new Tile(1, ResourceType.BRICK, 6, Set.of(1));
         
-        Path dummyPath = new Path(99, 0, 5);
+        Path dummyPath = new Path(99, 0, 2);
         
-        Board brokenBoard = new Board(List.of(t1, t2), List.of(n1, n2), List.of(dummyPath));
+        Board brokenBoard = new Board(List.of(t1, t2), List.of(n1, n2, n3), List.of(dummyPath));
 
         Player alice = new Player("Alice");
 
@@ -133,6 +135,7 @@ class StandardGameSetupTest {
             java.lang.reflect.InvocationTargetException.class, 
             () -> method.invoke(null, brokenBoard, alice, 0, 1)
         );
+        
         assertTrue(ite.getCause() instanceof IllegalArgumentException);
         assertTrue(ite.getCause().getMessage().contains("No road placement found"));
     }
