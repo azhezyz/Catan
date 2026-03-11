@@ -55,6 +55,12 @@ public final class FeatureShowcaseDemo {
         System.out.print("Select: ");
     }
 
+    /**
+     * Runs all showcase scenarios in a fixed order.
+     *
+     * <p>Useful when you want a full regression-style smoke run of the text UI behaviors
+     * without manually selecting each menu option.
+     */
     private static void runAll(PrintStream out) throws Exception {
         runScenarioBasicCommands(out);
         runScenarioBuildAndLongestRoad(out);
@@ -62,6 +68,25 @@ public final class FeatureShowcaseDemo {
         runScenarioWin(out);
     }
 
+    /**
+     * Simulates a minimal one-player turn to verify command parsing and turn-order validation.
+     *
+     * <p>Setup:
+     * <ul>
+     *     <li>Smallest possible board: 1 tile, 2 nodes, 1 edge.</li>
+     *     <li>Alice starts with exactly enough resources for one road.</li>
+     * </ul>
+     *
+     * <p>Scripted input intentionally mixes valid/invalid operations:
+     * <ul>
+     *     <li>{@code Go} before rolling (should be rejected by turn flow rules).</li>
+     *     <li>Build attempts before/after roll with malformed or impossible coordinates.</li>
+     *     <li>Duplicate roll in one turn (should be rejected).</li>
+     *     <li>One valid road build, then normal turn end.</li>
+     * </ul>
+     *
+     * <p>This scenario is mainly a parser + state-machine sanity check for command handling.
+     */
     private static void runScenarioBasicCommands(PrintStream out) throws Exception {
         out.println();
         out.println("=== Scenario 1: Basic command flow + validation ===");
@@ -100,6 +125,24 @@ public final class FeatureShowcaseDemo {
         );
     }
 
+    /**
+     * Simulates a deterministic "economic turn" that exercises production and chained building.
+     *
+     * <p>Setup:
+     * <ul>
+     *     <li>Linear board so road connectivity and path extension are easy to reason about.</li>
+     *     <li>Alice already owns an initial settlement + road to satisfy adjacency requirements.</li>
+     *     <li>Resource inventory is preloaded to cover multiple roads, one settlement, one city.</li>
+     * </ul>
+     *
+     * <p>What is being demonstrated:
+     * <ul>
+     *     <li>Deterministic roll ({@code 8}) triggers predictable resource collection.</li>
+     *     <li>Sequential road builds extend a continuous chain to update longest-road logic.</li>
+     *     <li>Settlement placement and city upgrade validate build rule paths in one turn.</li>
+     *     <li>{@code Actions}/{@code List} prints confirm resulting state and available commands.</li>
+     * </ul>
+     */
     private static void runScenarioBuildAndLongestRoad(PrintStream out) throws Exception {
         out.println();
         out.println("=== Scenario 2: Resource collect + build + longest road ===");
@@ -139,6 +182,23 @@ public final class FeatureShowcaseDemo {
         );
     }
 
+    /**
+     * Simulates the robber pipeline end-to-end across two players.
+     *
+     * <p>Setup:
+     * <ul>
+     *     <li>Board contains a desert tile and one productive wood tile (number 6).</li>
+     *     <li>Bob starts with 8 cards to force discard behavior when 7 is rolled.</li>
+     *     <li>Scripted random values make robber target/steal outcomes deterministic.</li>
+     * </ul>
+     *
+     * <p>What is being demonstrated:
+     * <ul>
+     *     <li>First roll is {@code 7}: triggers discard checks and robber move/steal flow.</li>
+     *     <li>Second roll is {@code 6}: validates that robber placement can block production.</li>
+     *     <li>{@code List} after these actions lets you inspect card/board effects.</li>
+     * </ul>
+     */
     private static void runScenarioRobberAndBlock(PrintStream out) throws Exception {
         out.println();
         out.println("=== Scenario 3: Robber discard/move/steal + block production ===");
@@ -169,6 +229,18 @@ public final class FeatureShowcaseDemo {
         );
     }
 
+    /**
+     * Simulates immediate victory detection from a pre-seeded high-score board state.
+     *
+     * <p>Setup:
+     * <ul>
+     *     <li>Uses the full standard board to match normal gameplay topology.</li>
+     *     <li>Alice is granted multiple cities before the turn starts to reach win threshold.</li>
+     * </ul>
+     *
+     * <p>The short script ({@code Roll -> Go}) is intentional: it checks that win-condition
+     * evaluation still fires correctly even when the turn itself has minimal actions.
+     */
     private static void runScenarioWin(PrintStream out) throws Exception {
         out.println();
         out.println("=== Scenario 4: Win condition trigger ===");
@@ -194,6 +266,12 @@ public final class FeatureShowcaseDemo {
         );
     }
 
+    /**
+     * Boots a HumanTurnGameEngine with scripted input and deterministic randomness.
+     *
+     * <p>Every scenario passes its own command stream, dice supplier, and Random implementation
+     * so demo output is reproducible and suitable for repeatable manual verification.
+     */
     private static void runEngine(
             PrintStream out,
             Board board,
@@ -213,6 +291,9 @@ public final class FeatureShowcaseDemo {
         }
     }
 
+    /**
+     * Linear board used by build/road showcase to keep adjacency reasoning obvious.
+     */
     private static Board buildLinearBuildBoard() {
         List<Tile> tiles = List.of(
                 new Tile(0, ResourceType.WOOD, 8, Set.of(0, 1, 2)),
@@ -246,6 +327,9 @@ public final class FeatureShowcaseDemo {
         return new Board(tiles, nodes, paths);
     }
 
+    /**
+     * Compact board with one productive tile and one robber tile for robber behavior demos.
+     */
     private static Board buildRobberBlockBoard() {
         List<Tile> tiles = List.of(
                 new Tile(0, null, 0, Set.of(0, 1, 2)),
@@ -269,18 +353,27 @@ public final class FeatureShowcaseDemo {
         return new Board(tiles, nodes, paths);
     }
 
+    /**
+     * Directly grants a settlement without cost checks (demo setup helper).
+     */
     private static void claimSettlement(Board board, Player player, int nodeId) {
         Node node = board.getNode(nodeId);
         node.claim(player);
         player.addSettlement(nodeId);
     }
 
+    /**
+     * Directly grants a road without cost checks (demo setup helper).
+     */
     private static void claimRoad(Board board, Player player, int pathId) {
         Path path = board.getPath(pathId);
         path.claim(player);
         player.addRoad(pathId);
     }
 
+    /**
+     * Directly grants a city by claiming a node then upgrading it (demo setup helper).
+     */
     private static void grantCity(Board board, Player player, int nodeId) {
         Node node = board.getNode(nodeId);
         node.claim(player);
@@ -289,6 +382,9 @@ public final class FeatureShowcaseDemo {
         player.addCity(nodeId);
     }
 
+    /**
+     * Returns scripted dice values in order; once exhausted, repeats the last value.
+     */
     private static final class FixedRolls implements IntSupplier {
         private final List<Integer> values;
         private int index = 0;
@@ -312,6 +408,9 @@ public final class FeatureShowcaseDemo {
         }
     }
 
+    /**
+     * Deterministic Random replacement used for predictable robber target and steal choices.
+     */
     private static final class ScriptedRandom extends Random {
         private final int[] sequence;
         private int index = 0;
