@@ -264,4 +264,63 @@ class HumanTurnGameEngineTest {
         assertTrue(log.contains("Discard 5 cards")); 
         assertTrue(log.contains("Robbed SHEEP from Bob")); 
     }
+
+    @Test
+    void undoRedoReplaysBuildRoadCommand() throws Exception {
+        Board board = minimalBoard();
+        Player alice = new Player("Alice");
+        board.getNode(0).claim(alice);
+        alice.addSettlement(0);
+        alice.addResource(ResourceType.WOOD, 2);
+        alice.addResource(ResourceType.BRICK, 2);
+
+        java.nio.file.Path state = Files.createTempFile("undo-redo-road", ".json");
+        ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        HumanTurnGameEngine engine = new HumanTurnGameEngine(
+                board, List.of(alice), new Scanner("Roll\nBuild road 0,1\nUndo\nRedo\nGo\n"),
+                new PrintStream(sink), state, () -> 2, new Random(0)
+        );
+
+        engine.runGame(1);
+
+        assertTrue(board.getPath(0).isOwnedBy(alice));
+        assertEquals(1, alice.getResourceCount(ResourceType.WOOD));
+        assertEquals(1, alice.getResourceCount(ResourceType.BRICK));
+
+        String log = sink.toString();
+        assertTrue(log.contains(": Undo"));
+        assertTrue(log.contains(": Redo"));
+    }
+
+    @Test
+    void redoHistoryClearsAfterExecutingNewCommand() throws Exception {
+        Board board = minimalBoard();
+        Player alice = new Player("Alice");
+        board.getNode(0).claim(alice);
+        alice.addSettlement(0);
+        alice.addResource(ResourceType.WOOD, 2);
+        alice.addResource(ResourceType.BRICK, 2);
+        alice.addResource(ResourceType.WHEAT, 3);
+        alice.addResource(ResourceType.ORE, 4);
+
+        java.nio.file.Path state = Files.createTempFile("redo-clears", ".json");
+        ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        HumanTurnGameEngine engine = new HumanTurnGameEngine(
+                board, List.of(alice),
+                new Scanner("Roll\nBuild road 0,1\nUndo\nBuild city 0\nRedo\nGo\n"),
+                new PrintStream(sink), state, () -> 2, new Random(0)
+        );
+
+        engine.runGame(1);
+
+        assertFalse(board.getPath(0).isOwnedBy(alice));
+        assertEquals(2, alice.getResourceCount(ResourceType.WOOD));
+        assertEquals(2, alice.getResourceCount(ResourceType.BRICK));
+        assertEquals(1, alice.getResourceCount(ResourceType.WHEAT));
+        assertEquals(1, alice.getResourceCount(ResourceType.ORE));
+        assertEquals(Catan.BuildingType.CITY, board.getNode(0).getBuilding().getType());
+
+        String log = sink.toString();
+        assertTrue(log.contains("Redo failed: nothing to redo"));
+    }
 }

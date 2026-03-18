@@ -61,6 +61,14 @@ public final class Path implements Identifiable {
         owner = player;
     }
 
+    public void unclaim(Player player) {
+        Objects.requireNonNull(player, "player");
+        if (owner == null || !owner.equals(player)) {
+            throw new IllegalStateException("Path is not owned by the player.");
+        }
+        owner = null;
+    }
+
     // Checks if this path touches a specific node ID.
     public boolean isAdjacentToNode(int nodeId) {
         return nodeAId == nodeId || nodeBId == nodeId;

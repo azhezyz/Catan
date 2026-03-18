@@ -102,6 +102,18 @@ public final class Node implements Identifiable {
         building = Building.settlement(player);
     }
 
+    public void unclaim(Player player) {
+        Objects.requireNonNull(player, "player");
+        if (owner == null || !owner.equals(player)) {
+            throw new IllegalStateException("Node is not owned by the player.");
+        }
+        if (building.getType() != BuildingType.SETTLEMENT) {
+            throw new IllegalStateException("Only settlements can be unclaimed directly.");
+        }
+        owner = null;
+        building = Building.empty();
+    }
+
     public Building getBuilding() {
         return building;
     }
@@ -116,5 +128,16 @@ public final class Node implements Identifiable {
             throw new IllegalStateException("Node is already a city.");
         }
         building = Building.city(player);
+    }
+
+    public void downgradeCityToSettlement(Player player) {
+        Objects.requireNonNull(player, "player");
+        if (owner == null || !owner.equals(player)) {
+            throw new IllegalStateException("Node is not owned by the player.");
+        }
+        if (building.getType() != BuildingType.CITY) {
+            throw new IllegalStateException("Node is not a city.");
+        }
+        building = Building.settlement(player);
     }
 }
