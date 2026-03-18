@@ -3,6 +3,7 @@
   "roads": [
     { "a": 6, "b": 7, "owner": "BLUE" },
     { "a": 8, "b": 9, "owner": "ORANGE" },
+    { "a": 3, "b": 12, "owner": "RED" },
     { "a": 11, "b": 10, "owner": "BLUE" },
     { "a": 15, "b": 14, "owner": "WHITE" },
     { "a": 13, "b": 12, "owner": "RED" },
