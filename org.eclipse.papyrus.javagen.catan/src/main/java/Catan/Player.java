@@ -94,6 +94,16 @@ public final class Player {
         }
     }
 
+    public void refund(Map<ResourceType, Integer> refund) {
+        Objects.requireNonNull(refund, "refund");
+        for (Map.Entry<ResourceType, Integer> entry : refund.entrySet()) {
+            if (entry.getValue() <= 0) {
+                throw new IllegalArgumentException("Refund values must be positive.");
+            }
+            resources.put(entry.getKey(), getResourceCount(entry.getKey()) + entry.getValue());
+        }
+    }
+
     public void addSettlement(int nodeId) {
         if (cityNodeIds.contains(nodeId)) {
             throw new IllegalStateException("Node " + nodeId + " is already a city.");
@@ -115,6 +125,27 @@ public final class Player {
     public void addRoad(int pathId) {
         if (!roadPathIds.add(pathId)) {
             throw new IllegalStateException("Road already recorded for path " + pathId);
+        }
+    }
+
+    public void removeSettlement(int nodeId) {
+        if (!settlementNodeIds.remove(nodeId)) {
+            throw new IllegalStateException("Settlement not recorded for node " + nodeId);
+        }
+    }
+
+    public void removeCity(int nodeId) {
+        if (!cityNodeIds.remove(nodeId)) {
+            throw new IllegalStateException("City not recorded for node " + nodeId);
+        }
+        if (!settlementNodeIds.add(nodeId)) {
+            throw new IllegalStateException("Settlement already recorded for node " + nodeId);
+        }
+    }
+
+    public void removeRoad(int pathId) {
+        if (!roadPathIds.remove(pathId)) {
+            throw new IllegalStateException("Road not recorded for path " + pathId);
         }
     }
 

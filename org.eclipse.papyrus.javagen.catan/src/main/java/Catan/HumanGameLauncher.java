@@ -6,11 +6,23 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Interactive launcher for a human-playable Catan session.
+ *
+ * <p>Responsibilities:
+ * <ul>
+ *     <li>Load launcher configuration (turn count, etc.).</li>
+ *     <li>Prompt and validate player display names.</li>
+ *     <li>Create the initial board/players and seed default setup.</li>
+ *     <li>Optionally start the visualizer process and stop it on exit.</li>
+ * </ul>
+ */
 public final class HumanGameLauncher {
     private HumanGameLauncher() {
     }
 
     public static void main(String[] args) {
+        // Allow overriding config/state paths from CLI; keep local defaults for easy startup.
         Path configPath = args.length >= 1 ? Path.of(args[0]) : Path.of("game.config");
         Path statePath = args.length >= 2 ? Path.of(args[1]) : Path.of("visualize", "state.json");
         HumanGameConfig config = HumanGameConfig.load(configPath);
@@ -18,6 +30,7 @@ public final class HumanGameLauncher {
         try (Scanner scanner = new Scanner(System.in)) {
             List<String> names = promptPlayerNames(scanner);
 
+            // Build a standard board and attach four human players in fixed color order.
             Board board = StandardGameSetup.buildFullBoard();
             Player alice = new Player(names.get(0));
             Player bob = new Player(names.get(1));
@@ -26,6 +39,7 @@ public final class HumanGameLauncher {
             List<Player> players = List.of(alice, bob, charlie, diana);
             StandardGameSetup.seedInitialState(board, alice, bob, charlie, diana);
 
+            // Keep the visualizer lifecycle bound to the game lifecycle.
             Process visualizer = startVisualizerProcess(statePath);
             try {
                 HumanTurnGameEngine engine = new HumanTurnGameEngine(board, players, scanner, System.out, statePath);
@@ -36,6 +50,9 @@ public final class HumanGameLauncher {
         }
     }
 
+    /**
+     * Collects four player names from stdin, applying defaults when input is blank or unavailable.
+     */
     private static List<String> promptPlayerNames(Scanner scanner) {
         System.out.println("=======================================");
         System.out.println("      CATAN - Human Game Start");
@@ -52,6 +69,11 @@ public final class HumanGameLauncher {
         return List.of(p1, p2, p3, p4);
     }
 
+    /**
+     * Reads and validates one player name.
+     *
+     * <p>Rules: blank => default name, max length 40.
+     */
     private static String readName(Scanner scanner, String label, String defaultName) {
         while (true) {
             System.out.print(label + " name: ");
@@ -70,6 +92,9 @@ public final class HumanGameLauncher {
         }
     }
 
+    /**
+     * Starts the Python visualizer in watch mode when its runtime is available.
+     */
     private static Process startVisualizerProcess(Path statePath) {
         File visualizeDir = resolveVisualizeDir(statePath);
         if (visualizeDir == null || !visualizeDir.isDirectory()) {
@@ -102,6 +127,12 @@ public final class HumanGameLauncher {
         }
     }
 
+    /**
+     * Resolves the visualizer directory from the state path.
+     *
+     * <p>If state path already points inside "visualize/", use that parent; otherwise fallback to
+     * "{user.dir}/visualize".
+     */
     private static File resolveVisualizeDir(Path statePath) {
         Path absoluteState = statePath.toAbsolutePath().normalize();
         Path parent = absoluteState.getParent();
@@ -111,6 +142,9 @@ public final class HumanGameLauncher {
         return new File(System.getProperty("user.dir"), "visualize");
     }
 
+    /**
+     * Finds the project-local Python executable in ".venv" (Windows or Unix layout).
+     */
     private static String resolvePythonExecutable(File visualizeDir) {
         File venvWindowsPython = new File(visualizeDir, ".venv\\Scripts\\python.exe");
         if (venvWindowsPython.isFile()) {
@@ -123,6 +157,9 @@ public final class HumanGameLauncher {
         return null;
     }
 
+    /**
+     * Best-effort shutdown for the spawned visualizer process.
+     */
     private static void stopVisualizer(Process visualizer) {
         if (visualizer == null) {
             return;

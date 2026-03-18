@@ -25,6 +25,8 @@ public final class HumanTurnGameEngine {
     private static final Pattern LIST_COMMAND = Pattern.compile("(?i)^list$");
     private static final Pattern ACTIONS_COMMAND = Pattern.compile("(?i)^actions$");
     private static final Pattern GO_COMMAND = Pattern.compile("(?i)^go$");
+    private static final Pattern UNDO_COMMAND = Pattern.compile("(?i)^undo$");
+    private static final Pattern REDO_COMMAND = Pattern.compile("(?i)^redo$");
     private static final Pattern BUILD_COMMAND = Pattern.compile("(?i)^build\\s*(.*)$");
     private static final Pattern BUILD_KIND_COMMAND = Pattern.compile("(?i)^(\\S+)(?:\\s+(.*))?$");
 
@@ -94,7 +96,8 @@ public final class HumanTurnGameEngine {
 
     private boolean runSinglePlayerTurn(int turnId, Player player) {
         boolean rolled = false;
-        out.printf("Turn %d - %s (commands: Roll, List, Actions, Build ..., Go)%n", turnId, player.getName());
+        CommandManager commandManager = new CommandManager();
+        out.printf("Turn %d - %s (commands: Roll, List, Actions, Build ..., Undo, Redo, Go)%n", turnId, player.getName());
         printAvailableActions(turnId, player, rolled);
         while (true) {
             out.print("> ");
@@ -134,13 +137,45 @@ public final class HumanTurnGameEngine {
                 continue;
             }
 
+            if (UNDO_COMMAND.matcher(line).matches()) {
+                if (!rolled) {
+                    printAction(turnId, player.getName(), "Invalid: roll first");
+                    continue;
+                }
+                if (!commandManager.undoLast()) {
+                    printAction(turnId, player.getName(), "Undo failed: " + commandManager.getLastFailureReason());
+                } else {
+                    recomputeLongestRoadState();
+                    printAction(turnId, player.getName(), "Undo");
+                    writeStateSnapshot();
+                }
+                printAvailableActions(turnId, player, rolled);
+                continue;
+            }
+
+            if (REDO_COMMAND.matcher(line).matches()) {
+                if (!rolled) {
+                    printAction(turnId, player.getName(), "Invalid: roll first");
+                    continue;
+                }
+                if (!commandManager.redoLast()) {
+                    printAction(turnId, player.getName(), "Redo failed: " + commandManager.getLastFailureReason());
+                } else {
+                    recomputeLongestRoadState();
+                    printAction(turnId, player.getName(), "Redo");
+                    writeStateSnapshot();
+                }
+                printAvailableActions(turnId, player, rolled);
+                continue;
+            }
+
             Matcher buildMatcher = BUILD_COMMAND.matcher(line);
             if (buildMatcher.matches()) {
                 if (!rolled) {
                     printAction(turnId, player.getName(), "Invalid: roll first");
                     continue;
                 }
-                handleBuildCommand(turnId, player, buildMatcher.group(1));
+                handleBuildCommand(turnId, player, buildMatcher.group(1), commandManager);
                 writeStateSnapshot();
                 printAvailableActions(turnId, player, rolled);
                 continue;
@@ -156,7 +191,7 @@ public final class HumanTurnGameEngine {
             }
 
             printAction(turnId, player.getName(), "Invalid command");
-            out.println("Valid commands: Roll | List | Actions | Build settlement <nodeId> | Build city <nodeId> | Build road <fromNodeId, toNodeId> | Go");
+            out.println("Valid commands: Roll | List | Actions | Build settlement <nodeId> | Build city <nodeId> | Build road <fromNodeId, toNodeId> | Undo | Redo | Go");
         }
     }
 
@@ -176,6 +211,8 @@ public final class HumanTurnGameEngine {
 
         actions.add("List");
         actions.add("Actions");
+        actions.add("Undo");
+        actions.add("Redo");
         actions.add("Go");
 
         for (ActionDecision decision : BuildPlanner.availableActions(board, player)) {
@@ -193,7 +230,7 @@ public final class HumanTurnGameEngine {
         printAction(turnId, player.getName(), "Available actions: " + String.join(" | ", actions));
     }
 
-    private void handleBuildCommand(int turnId, Player player, String payload) {
+    private void handleBuildCommand(int turnId, Player player, String payload, CommandManager commandManager) {
         payload = payload == null ? "" : payload.trim();
         if (payload.isEmpty()) {
             printAction(turnId, player.getName(), "Invalid build syntax");
@@ -211,9 +248,9 @@ public final class HumanTurnGameEngine {
 
         try {
             switch (kind) {
-                case "settlement" -> buildSettlementByNode(turnId, player, args);
-                case "city" -> buildCityByNode(turnId, player, args);
-                case "road" -> buildRoadByNodes(turnId, player, args);
+                case "settlement" -> buildSettlementByNode(turnId, player, args, commandManager);
+                case "city" -> buildCityByNode(turnId, player, args, commandManager);
+                case "road" -> buildRoadByNodes(turnId, player, args, commandManager);
                 default -> printAction(turnId, player.getName(), "Invalid build type");
             }
         } catch (NumberFormatException e) {
@@ -221,41 +258,29 @@ public final class HumanTurnGameEngine {
         }
     }
 
-    private void buildSettlementByNode(int turnId, Player player, String arg) {
+    private void buildSettlementByNode(int turnId, Player player, String arg, CommandManager commandManager) {
         int nodeId = Integer.parseInt(arg);
-        Node node = board.getNode(nodeId);
-        if (!node.canBuildSettlement(board, player)) {
-            printAction(turnId, player.getName(), "Build settlement " + nodeId + " failed: illegal placement");
+        BuildSettlementCommand command = new BuildSettlementCommand(board, player, nodeId);
+        if (!commandManager.executeCommand(command)) {
+            printAction(turnId, player.getName(), "Build settlement " + nodeId + " failed: " + command.getFailureReason());
             return;
         }
-        if (!player.canAfford(BuildPlanner.settlementCost())) {
-            printAction(turnId, player.getName(), "Build settlement " + nodeId + " failed: insufficient resources");
-            return;
-        }
-        node.claim(player);
-        player.spend(BuildPlanner.settlementCost());
-        player.addSettlement(nodeId);
+        recomputeLongestRoadState();
         printAction(turnId, player.getName(), "Build settlement " + nodeId);
     }
 
-    private void buildCityByNode(int turnId, Player player, String arg) {
+    private void buildCityByNode(int turnId, Player player, String arg, CommandManager commandManager) {
         int nodeId = Integer.parseInt(arg);
-        Node node = board.getNode(nodeId);
-        if (!node.canUpgradeToCity(player)) {
-            printAction(turnId, player.getName(), "Build city " + nodeId + " failed: illegal upgrade");
+        BuildCityCommand command = new BuildCityCommand(board, player, nodeId);
+        if (!commandManager.executeCommand(command)) {
+            printAction(turnId, player.getName(), "Build city " + nodeId + " failed: " + command.getFailureReason());
             return;
         }
-        if (!player.canAfford(BuildPlanner.cityCost())) {
-            printAction(turnId, player.getName(), "Build city " + nodeId + " failed: insufficient resources");
-            return;
-        }
-        node.upgradeToCity(player);
-        player.spend(BuildPlanner.cityCost());
-        player.addCity(nodeId);
+        recomputeLongestRoadState();
         printAction(turnId, player.getName(), "Build city " + nodeId);
     }
 
-    private void buildRoadByNodes(int turnId, Player player, String arg) {
+    private void buildRoadByNodes(int turnId, Player player, String arg, CommandManager commandManager) {
         String[] nodeTokens = arg.split(",");
         if (nodeTokens.length != 2) {
             printAction(turnId, player.getName(), "Build road failed: use fromNodeId, toNodeId");
@@ -269,18 +294,12 @@ public final class HumanTurnGameEngine {
             return;
         }
         Path path = pathOpt.get();
-        if (!path.canBuildRoad(board, player) || !isRoadConnectedToPlayerNetwork(player, path)) {
-            printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId + " failed: illegal placement");
+        BuildRoadCommand command = new BuildRoadCommand(board, player, path.getId());
+        if (!commandManager.executeCommand(command)) {
+            printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId + " failed: " + command.getFailureReason());
             return;
         }
-        if (!player.canAfford(BuildPlanner.roadCost())) {
-            printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId + " failed: insufficient resources");
-            return;
-        }
-        path.claim(player);
-        player.spend(BuildPlanner.roadCost());
-        player.addRoad(path.getId());
-        updateLongestRoad(player, turnId);
+        recomputeLongestRoadState();
         printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId);
     }
 
@@ -419,6 +438,45 @@ public final class HumanTurnGameEngine {
         longestRoadHolder = player;
         currentMaxRoadLength = newLen;
         printAction(turnId, player.getName(), "Now holds Longest Road (length=" + newLen + ")");
+    }
+
+    private void recomputeLongestRoadState() {
+        Map<Player, Integer> lengths = new HashMap<>();
+        for (Player candidate : players) {
+            candidate.setHasLongestRoad(false);
+            lengths.put(candidate, candidate.calculateLongestRoad(board));
+        }
+
+        int bestLength = 4;
+        for (Integer length : lengths.values()) {
+            if (length > bestLength) {
+                bestLength = length;
+            }
+        }
+
+        if (bestLength <= 4) {
+            longestRoadHolder = null;
+            currentMaxRoadLength = 4;
+            return;
+        }
+
+        Player holderCandidate = null;
+        if (longestRoadHolder != null && lengths.getOrDefault(longestRoadHolder, 0) == bestLength) {
+            holderCandidate = longestRoadHolder;
+        } else {
+            for (Player candidate : players) {
+                if (lengths.getOrDefault(candidate, 0) == bestLength) {
+                    holderCandidate = candidate;
+                    break;
+                }
+            }
+        }
+
+        if (holderCandidate != null) {
+            holderCandidate.setHasLongestRoad(true);
+        }
+        longestRoadHolder = holderCandidate;
+        currentMaxRoadLength = bestLength;
     }
 
     private boolean isRoadConnectedToPlayerNetwork(Player player, Path path) {
