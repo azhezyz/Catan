@@ -42,7 +42,11 @@ public final class HumanGameLauncher {
             // Keep the visualizer lifecycle bound to the game lifecycle.
             Process visualizer = startVisualizerProcess(statePath);
             try {
-                HumanTurnGameEngine engine = new HumanTurnGameEngine(board, players, scanner, System.out, statePath);
+                List<GameObserver> observers = List.of(
+                        new ConsoleObserver(System.out),
+                        new StateSnapshotObserver(statePath)
+                );
+                HumanTurnGameEngine engine = new HumanTurnGameEngine(board, players, scanner, System.out, observers);
                 engine.runGame(config.getTurns());
             } finally {
                 stopVisualizer(visualizer);

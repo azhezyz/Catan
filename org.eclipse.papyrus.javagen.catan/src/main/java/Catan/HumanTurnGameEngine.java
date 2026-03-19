@@ -1,10 +1,7 @@
 package Catan;
 
-import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,14 +31,13 @@ public final class HumanTurnGameEngine {
     private final List<Player> players;
     private final Scanner scanner;
     private final PrintStream out;
-    private final java.nio.file.Path statePath;
+    private final List<GameObserver> observers;
     private final Map<Player, String> playerColors;
     private final IntSupplier rollSupplier;
     private final Random random;
     private int robberTileId;
 
     private Player longestRoadHolder = null;
-    private int currentMaxRoadLength = 4;
 
     public HumanTurnGameEngine(
             Board board,
@@ -50,7 +46,7 @@ public final class HumanTurnGameEngine {
             PrintStream out,
             java.nio.file.Path statePath
     ) {
-        this(board, players, scanner, out, statePath, new DiceSet()::nextRoll, new Random());
+        this(board, players, scanner, out, defaultObservers(out, statePath), new DiceSet()::nextRoll, new Random());
     }
 
     public HumanTurnGameEngine(
@@ -62,11 +58,33 @@ public final class HumanTurnGameEngine {
             IntSupplier rollSupplier,
             Random random
     ) {
+        this(board, players, scanner, out, defaultObservers(out, statePath), rollSupplier, random);
+    }
+
+    public HumanTurnGameEngine(
+            Board board,
+            List<Player> players,
+            Scanner scanner,
+            PrintStream out,
+            List<GameObserver> observers
+    ) {
+        this(board, players, scanner, out, observers, new DiceSet()::nextRoll, new Random());
+    }
+
+    public HumanTurnGameEngine(
+            Board board,
+            List<Player> players,
+            Scanner scanner,
+            PrintStream out,
+            List<GameObserver> observers,
+            IntSupplier rollSupplier,
+            Random random
+    ) {
         this.board = Objects.requireNonNull(board, "board");
         this.players = List.copyOf(Objects.requireNonNull(players, "players"));
         this.scanner = Objects.requireNonNull(scanner, "scanner");
         this.out = Objects.requireNonNull(out, "out");
-        this.statePath = Objects.requireNonNull(statePath, "statePath");
+        this.observers = List.copyOf(Objects.requireNonNull(observers, "observers"));
         this.rollSupplier = Objects.requireNonNull(rollSupplier, "rollSupplier");
         this.random = Objects.requireNonNull(random, "random");
         this.playerColors = assignColors(this.players);
@@ -77,27 +95,46 @@ public final class HumanTurnGameEngine {
         if (turns < 1 || turns > 8192) {
             throw new IllegalArgumentException("turns must be in [1, 8192].");
         }
-        writeStateSnapshot();
+        publishStateChanged();
         for (int turn = 1; turn <= turns; turn++) {
             for (Player current : players) {
                 if (!runSinglePlayerTurn(turn, current)) {
-                    out.println("Input closed. Game ended.");
+                    publish(new GameEvent.GameEndedEvent(
+                            GameEvent.GameEndReason.INPUT_CLOSED,
+                            turn,
+                            current.getName(),
+                            current.getVictoryPoints(),
+                            "input closed"
+                    ));
                     return;
                 }
                 if (current.getVictoryPoints() >= 10) {
                     printAction(turn, current.getName(), "Win with " + current.getVictoryPoints() + " VP");
-                    writeStateSnapshot();
+                    publishStateChanged();
+                    publish(new GameEvent.GameEndedEvent(
+                            GameEvent.GameEndReason.WIN,
+                            turn,
+                            current.getName(),
+                            current.getVictoryPoints(),
+                            "win condition reached"
+                    ));
                     return;
                 }
             }
         }
-        out.println("Reached max turns without a winner.");
+        publish(new GameEvent.GameEndedEvent(
+                GameEvent.GameEndReason.MAX_TURNS,
+                turns,
+                "",
+                0,
+                "max turns reached without winner"
+        ));
     }
 
     private boolean runSinglePlayerTurn(int turnId, Player player) {
         boolean rolled = false;
         CommandManager commandManager = new CommandManager();
-        out.printf("Turn %d - %s (commands: Roll, List, Actions, Build ..., Undo, Redo, Go)%n", turnId, player.getName());
+        publish(new GameEvent.TurnStartEvent(turnId, player.getName()));
         printAvailableActions(turnId, player, rolled);
         while (true) {
             out.print("> ");
@@ -116,13 +153,14 @@ public final class HumanTurnGameEngine {
                 }
                 int roll = rollDice();
                 rolled = true;
+                publish(new GameEvent.DiceRolledEvent(turnId, player.getName(), roll));
                 printAction(turnId, player.getName(), "Roll " + roll);
                 if (roll == 7) {
                     handleRobberRoll(turnId, player);
                 } else {
                     distributeResources(roll, turnId);
                 }
-                writeStateSnapshot();
+                publishStateChanged();
                 printAvailableActions(turnId, player, rolled);
                 continue;
             }
@@ -143,11 +181,26 @@ public final class HumanTurnGameEngine {
                     continue;
                 }
                 if (!commandManager.undoLast()) {
-                    printAction(turnId, player.getName(), "Undo failed: " + commandManager.getLastFailureReason());
+                    String reason = commandManager.getLastFailureReason();
+                    printAction(turnId, player.getName(), "Undo failed: " + reason);
+                    publish(new GameEvent.UndoRedoEvent(
+                            turnId,
+                            player.getName(),
+                            GameEvent.UndoRedoType.UNDO,
+                            false,
+                            reason
+                    ));
                 } else {
                     recomputeLongestRoadState();
                     printAction(turnId, player.getName(), "Undo");
-                    writeStateSnapshot();
+                    publish(new GameEvent.UndoRedoEvent(
+                            turnId,
+                            player.getName(),
+                            GameEvent.UndoRedoType.UNDO,
+                            true,
+                            ""
+                    ));
+                    publishStateChanged();
                 }
                 printAvailableActions(turnId, player, rolled);
                 continue;
@@ -159,11 +212,26 @@ public final class HumanTurnGameEngine {
                     continue;
                 }
                 if (!commandManager.redoLast()) {
-                    printAction(turnId, player.getName(), "Redo failed: " + commandManager.getLastFailureReason());
+                    String reason = commandManager.getLastFailureReason();
+                    printAction(turnId, player.getName(), "Redo failed: " + reason);
+                    publish(new GameEvent.UndoRedoEvent(
+                            turnId,
+                            player.getName(),
+                            GameEvent.UndoRedoType.REDO,
+                            false,
+                            reason
+                    ));
                 } else {
                     recomputeLongestRoadState();
                     printAction(turnId, player.getName(), "Redo");
-                    writeStateSnapshot();
+                    publish(new GameEvent.UndoRedoEvent(
+                            turnId,
+                            player.getName(),
+                            GameEvent.UndoRedoType.REDO,
+                            true,
+                            ""
+                    ));
+                    publishStateChanged();
                 }
                 printAvailableActions(turnId, player, rolled);
                 continue;
@@ -176,7 +244,7 @@ public final class HumanTurnGameEngine {
                     continue;
                 }
                 handleBuildCommand(turnId, player, buildMatcher.group(1), commandManager);
-                writeStateSnapshot();
+                publishStateChanged();
                 printAvailableActions(turnId, player, rolled);
                 continue;
             }
@@ -191,7 +259,8 @@ public final class HumanTurnGameEngine {
             }
 
             printAction(turnId, player.getName(), "Invalid command");
-            out.println("Valid commands: Roll | List | Actions | Build settlement <nodeId> | Build city <nodeId> | Build road <fromNodeId, toNodeId> | Undo | Redo | Go");
+            printAction(turnId, player.getName(),
+                    "Valid commands: Roll | List | Actions | Build settlement <nodeId> | Build city <nodeId> | Build road <fromNodeId, toNodeId> | Undo | Redo | Go");
         }
     }
 
@@ -262,45 +331,75 @@ public final class HumanTurnGameEngine {
         int nodeId = Integer.parseInt(arg);
         BuildSettlementCommand command = new BuildSettlementCommand(board, player, nodeId);
         if (!commandManager.executeCommand(command)) {
-            printAction(turnId, player.getName(), "Build settlement " + nodeId + " failed: " + command.getFailureReason());
+            String reason = command.getFailureReason();
+            printAction(turnId, player.getName(), "Build settlement " + nodeId + " failed: " + reason);
+            publish(new GameEvent.BuildFailedEvent(turnId, player.getName(), BuildAction.SETTLEMENT, String.valueOf(nodeId), reason));
             return;
         }
         recomputeLongestRoadState();
         printAction(turnId, player.getName(), "Build settlement " + nodeId);
+        publish(new GameEvent.BuildSucceededEvent(turnId, player.getName(), BuildAction.SETTLEMENT, String.valueOf(nodeId)));
     }
 
     private void buildCityByNode(int turnId, Player player, String arg, CommandManager commandManager) {
         int nodeId = Integer.parseInt(arg);
         BuildCityCommand command = new BuildCityCommand(board, player, nodeId);
         if (!commandManager.executeCommand(command)) {
-            printAction(turnId, player.getName(), "Build city " + nodeId + " failed: " + command.getFailureReason());
+            String reason = command.getFailureReason();
+            printAction(turnId, player.getName(), "Build city " + nodeId + " failed: " + reason);
+            publish(new GameEvent.BuildFailedEvent(turnId, player.getName(), BuildAction.CITY, String.valueOf(nodeId), reason));
             return;
         }
         recomputeLongestRoadState();
         printAction(turnId, player.getName(), "Build city " + nodeId);
+        publish(new GameEvent.BuildSucceededEvent(turnId, player.getName(), BuildAction.CITY, String.valueOf(nodeId)));
     }
 
     private void buildRoadByNodes(int turnId, Player player, String arg, CommandManager commandManager) {
         String[] nodeTokens = arg.split(",");
         if (nodeTokens.length != 2) {
-            printAction(turnId, player.getName(), "Build road failed: use fromNodeId, toNodeId");
+            String reason = "use fromNodeId, toNodeId";
+            printAction(turnId, player.getName(), "Build road failed: " + reason);
+            publish(new GameEvent.BuildFailedEvent(turnId, player.getName(), BuildAction.ROAD, arg, reason));
             return;
         }
         int fromNodeId = Integer.parseInt(nodeTokens[0].trim());
         int toNodeId = Integer.parseInt(nodeTokens[1].trim());
         Optional<Path> pathOpt = findPathByNodes(fromNodeId, toNodeId);
         if (pathOpt.isEmpty()) {
-            printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId + " failed: no path");
+            String reason = "no path";
+            printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId + " failed: " + reason);
+            publish(new GameEvent.BuildFailedEvent(
+                    turnId,
+                    player.getName(),
+                    BuildAction.ROAD,
+                    fromNodeId + "," + toNodeId,
+                    reason
+            ));
             return;
         }
         Path path = pathOpt.get();
         BuildRoadCommand command = new BuildRoadCommand(board, player, path.getId());
         if (!commandManager.executeCommand(command)) {
-            printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId + " failed: " + command.getFailureReason());
+            String reason = command.getFailureReason();
+            printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId + " failed: " + reason);
+            publish(new GameEvent.BuildFailedEvent(
+                    turnId,
+                    player.getName(),
+                    BuildAction.ROAD,
+                    fromNodeId + "," + toNodeId,
+                    reason
+            ));
             return;
         }
         recomputeLongestRoadState();
         printAction(turnId, player.getName(), "Build road " + fromNodeId + "," + toNodeId);
+        publish(new GameEvent.BuildSucceededEvent(
+                turnId,
+                player.getName(),
+                BuildAction.ROAD,
+                fromNodeId + "," + toNodeId
+        ));
     }
 
     private void distributeResources(int roll, int turnId) {
@@ -378,6 +477,7 @@ public final class HumanTurnGameEngine {
         int targetTileId = moveCandidates.get(random.nextInt(moveCandidates.size()));
         robberTileId = targetTileId;
         printAction(turnId, roller.getName(), "Robber moved to tile " + robberTileId + " (" + victim.getName() + ")");
+        publish(new GameEvent.RobberMovedEvent(turnId, roller.getName(), robberTileId, victim.getName()));
 
         ResourceType stolen = drawRandomResourceCard(victim);
         if (stolen == null) {
@@ -387,6 +487,7 @@ public final class HumanTurnGameEngine {
         victim.spend(Map.of(stolen, 1));
         roller.addResource(stolen, 1);
         printAction(turnId, roller.getName(), "Robbed " + stolen + " from " + victim.getName());
+        publish(new GameEvent.RobbedEvent(turnId, roller.getName(), victim.getName(), stolen));
     }
 
     private List<Integer> tileIdsAdjacentToPlayer(Player player) {
@@ -425,21 +526,6 @@ public final class HumanTurnGameEngine {
         return board.getTiles().get(0).getId();
     }
 
-    private void updateLongestRoad(Player player, int turnId) {
-        int newLen = player.calculateLongestRoad(board);
-        if (newLen <= currentMaxRoadLength) {
-            return;
-        }
-        if (longestRoadHolder != null && !longestRoadHolder.equals(player)) {
-            longestRoadHolder.setHasLongestRoad(false);
-            printAction(turnId, player.getName(), "Take Longest Road from " + longestRoadHolder.getName());
-        }
-        player.setHasLongestRoad(true);
-        longestRoadHolder = player;
-        currentMaxRoadLength = newLen;
-        printAction(turnId, player.getName(), "Now holds Longest Road (length=" + newLen + ")");
-    }
-
     private void recomputeLongestRoadState() {
         Map<Player, Integer> lengths = new HashMap<>();
         for (Player candidate : players) {
@@ -456,7 +542,6 @@ public final class HumanTurnGameEngine {
 
         if (bestLength <= 4) {
             longestRoadHolder = null;
-            currentMaxRoadLength = 4;
             return;
         }
 
@@ -476,28 +561,6 @@ public final class HumanTurnGameEngine {
             holderCandidate.setHasLongestRoad(true);
         }
         longestRoadHolder = holderCandidate;
-        currentMaxRoadLength = bestLength;
-    }
-
-    private boolean isRoadConnectedToPlayerNetwork(Player player, Path path) {
-        return canConnectAtNode(player, path, path.getNodeAId())
-                || canConnectAtNode(player, path, path.getNodeBId());
-    }
-
-    private boolean canConnectAtNode(Player player, Path candidate, int nodeId) {
-        Node node = board.getNode(nodeId);
-        if (node.isOwnedBy(player)) {
-            return true;
-        }
-        if (node.isClaimed() && !node.isOwnedBy(player)) {
-            return false;
-        }
-        for (Path adjacent : board.pathsAdjacentToNode(nodeId)) {
-            if (adjacent != candidate && adjacent.isOwnedBy(player)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private Optional<Path> findPathByNodes(int a, int b) {
@@ -511,60 +574,21 @@ public final class HumanTurnGameEngine {
         return Optional.empty();
     }
 
-    private void writeStateSnapshot() {
-        List<Path> roads = new ArrayList<>(board.getPaths());
-        roads.sort(Comparator.comparingInt(Path::getId));
-        List<Node> nodes = new ArrayList<>(board.getNodes());
-        nodes.sort(Comparator.comparingInt(Node::getId));
+    private void publishStateChanged() {
+        publish(new GameEvent.StateChangedEvent(robberTileId, board, Map.copyOf(playerColors)));
+    }
 
-        StringBuilder json = new StringBuilder();
-        json.append("{\n");
-        json.append("  \"robberTileId\": ").append(robberTileId).append(",\n");
-        json.append("  \"roads\": [\n");
-        boolean firstRoad = true;
-        for (Path road : roads) {
-            Optional<Player> ownerOpt = road.getOwner();
-            if (ownerOpt.isEmpty()) {
-                continue;
-            }
-            if (!firstRoad) {
-                json.append(",\n");
-            }
-            Player owner = ownerOpt.get();
-            json.append("    { \"a\": ").append(road.getNodeAId())
-                    .append(", \"b\": ").append(road.getNodeBId())
-                    .append(", \"owner\": \"").append(colorOf(owner)).append("\" }");
-            firstRoad = false;
+    private void publish(GameEvent event) {
+        for (GameObserver observer : observers) {
+            observer.onEvent(event);
         }
-        json.append("\n  ],\n");
-        json.append("  \"buildings\": [\n");
-        boolean firstBuilding = true;
-        for (Node node : nodes) {
-            Optional<Player> ownerOpt = node.getOwner();
-            if (ownerOpt.isEmpty()) {
-                continue;
-            }
-            if (!firstBuilding) {
-                json.append(",\n");
-            }
-            Player owner = ownerOpt.get();
-            String type = node.getBuilding().getType() == BuildingType.CITY ? "CITY" : "SETTLEMENT";
-            json.append("    { \"node\": ").append(node.getId())
-                    .append(", \"owner\": \"").append(colorOf(owner))
-                    .append("\", \"type\": \"").append(type).append("\" }");
-            firstBuilding = false;
-        }
-        json.append("\n  ]\n");
-        json.append("}\n");
+    }
 
-        try {
-            if (statePath.getParent() != null) {
-                Files.createDirectories(statePath.getParent());
-            }
-            Files.writeString(statePath, json.toString());
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to write state file: " + statePath, e);
-        }
+    private static List<GameObserver> defaultObservers(PrintStream out, java.nio.file.Path statePath) {
+        return List.of(
+                new ConsoleObserver(out),
+                new StateSnapshotObserver(statePath)
+        );
     }
 
     private static Map<Player, String> assignColors(List<Player> players) {
@@ -573,10 +597,6 @@ public final class HumanTurnGameEngine {
             colors.put(players.get(i), COLOR_ORDER.get(i % COLOR_ORDER.size()));
         }
         return colors;
-    }
-
-    private String colorOf(Player player) {
-        return playerColors.getOrDefault(player, "WHITE");
     }
 
     private static String formatResources(Player player) {
@@ -591,6 +611,6 @@ public final class HumanTurnGameEngine {
     }
 
     private void printAction(int turnId, String playerId, String action) {
-        out.printf("[%d] / [%s]: %s%n", turnId, playerId, action);
+        publish(new GameEvent.ActionEvent(turnId, playerId, action));
     }
 }
