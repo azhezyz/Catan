@@ -99,7 +99,7 @@ public final class Node implements Identifiable {
             throw new IllegalStateException("Node already claimed.");
         }
         owner = player;
-        building = Building.settlement(player);
+        building = Building.settlement();
     }
 
     public void unclaim(Player player) {
@@ -127,7 +127,7 @@ public final class Node implements Identifiable {
         if (building.getType() == BuildingType.CITY) {
             throw new IllegalStateException("Node is already a city.");
         }
-        building = Building.city(player);
+        building = Building.city();
     }
 
     public void downgradeCityToSettlement(Player player) {
@@ -138,6 +138,6 @@ public final class Node implements Identifiable {
         if (building.getType() != BuildingType.CITY) {
             throw new IllegalStateException("Node is not a city.");
         }
-        building = Building.settlement(player);
+        building = Building.settlement();
     }
 }
