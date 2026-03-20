@@ -26,6 +26,7 @@ public final class Player {
     private final Set<Integer> cityNodeIds;
     private final Set<Integer> roadPathIds;
     private boolean hasLongestRoad = false;
+    private PlayerStrategy strategy = new HumanPlayerStrategy();
 
     public Player(String name) {
         this.name = requireName(name);
@@ -223,5 +224,13 @@ public final class Player {
             }
         }
         return deepest;
+    }
+
+    public void setStrategy(PlayerStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public PlayerStrategy getStrategy() {
+        return strategy;
     }
 }
