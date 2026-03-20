@@ -137,11 +137,16 @@ public final class HumanTurnGameEngine {
         publish(new GameEvent.TurnStartEvent(turnId, player.getName()));
         printAvailableActions(turnId, player, rolled);
         while (true) {
-            out.print("> ");
-            if (!scanner.hasNextLine()) {
+            System.out.print("> ");
+
+            // Ask the strategy for the command (AI returns instantly, Human waits for Scanner)
+            String line = player.getStrategy().getNextCommand(board, player, players, scanner);
+
+            if (line == null) {
+                publish(new GameEvent.GameEndedEvent(GameEvent.GameEndReason.INPUT_CLOSED, turnId, player.getName(), player.getVictoryPoints(), "Input closed."));
                 return false;
             }
-            String line = scanner.nextLine().trim();
+            line = line.trim();
             if (line.isEmpty()) {
                 continue;
             }
