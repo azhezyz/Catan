@@ -10,6 +10,9 @@
           <children>
             <emfPageIdentifier href="catan.notation#_8x6xUAivEfG1boJ-ECKFew"/>
           </children>
+          <children>
+            <emfPageIdentifier href="Catan.notation#_8x6xUAivEfG1boJ-ECKFew"/>
+          </children>
         </children>
       </windows>
     </sashModel>
