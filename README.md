@@ -78,9 +78,6 @@ The codebase models core Catan concepts such as:
 - New settlements must connect to the player's road network.
 - Cities upgrade an existing settlement owned by the same player.
 
-### Trading
-- Domestic trade: active player may trade with other players.
-- Maritime trade: active player may trade with the bank; harbor ownership improves exchange rates.
 
 ### Development Cards and Special Cards
 - Development cards include Knight, Progress, and Victory Point cards.
@@ -103,6 +100,7 @@ The codebase models core Catan concepts such as:
 - Java 21
 - Eclipse Papyrus (UML modeling)
 - Maven (build)
+- Python 3.11+ (optional, for visualizer only)
 
 ## Build
 From `org.eclipse.papyrus.javagen.catan`:
@@ -113,7 +111,7 @@ mvn compile
 
 ## Run The Project
 
-### 1) Start Human Game (quick launch scripts)
+### 1) Human game (quick start scripts)
 From repository root:
 
 Windows:
@@ -121,7 +119,7 @@ Windows:
 .\start_game.bat
 ```
 
-PowerShell directly:
+Windows PowerShell:
 ```powershell
 .\start_game.ps1
 ```
@@ -131,31 +129,107 @@ macOS/Linux:
 ./start_game.sh
 ```
 
-### 2) Start Human Game (traditional Maven + Java)
+The script compiles Java and starts:
+
+```text
+Catan.HumanGameLauncher game.config visualize/state.json
+```
+
+### 2) Human game (manual launch)
 From `org.eclipse.papyrus.javagen.catan`:
 
 ```powershell
 mvn -q -DskipTests compile
-java -cp target/classes Catan.HumanGameLauncher game.config visualize/state.json
+java -cp target/classes Catan.HumanGameLauncher [configPath] [statePath]
 ```
 
-### 3) Start Feature Showcase Demo (text UI)
-This demo shows deterministic feature scenarios (command validation, build flow, longest road, robber flow, blocked production, win trigger).
+Arguments are optional:
+- `configPath` default: `game.config`
+- `statePath` default: `visualize/state.json`
 
-From `org.eclipse.papyrus.javagen.catan`:
+### 3) Human launcher flow
+At startup, the launcher will:
+1. Ask for 4 player names (blank uses defaults: `Alice`, `Bob`, `Charlie`, `Diana`).
+2. Ask each seat controller mode (blank uses `0`).
+3. Build standard board and seed initial placements.
+4. Try to start visualizer automatically if `visualize/.venv` exists.
+
+Seat controller options:
+- `0`: Human (manual input)
+- `1`: AI OverSeven (discard-risk control)
+- `2`: AI ConnectRoads (network bridging)
+- `3`: AI DefendLongestRoad (road race)
+- `4`: AI ValueMax (highest immediate value)
+
+### 4) Turn commands (human-controlled seats)
+Commands are case-insensitive and support flexible spacing.
+
+- `Roll`
+- `List`
+- `Actions`
+- `Build settlement <nodeId>`
+- `Build city <nodeId>`
+- `Build road <fromNodeId, toNodeId>`
+- `Undo`
+- `Redo`
+- `Go`
+
+Turn rule:
+- You must `Roll` before `Build`, `Undo`, `Redo`, or `Go`.
+
+### 5) Config file
+`org.eclipse.papyrus.javagen.catan/game.config` currently supports:
+
+```text
+turns: 100
+```
+
+Constraints:
+- valid range is `1..8192`
+- if the file is missing, default is `100`
+
+### 6) Demos
+Feature showcase demo (deterministic scenarios):
 
 ```powershell
+cd org.eclipse.papyrus.javagen.catan
 mvn -q -DskipTests compile
 java -cp target/classes Catan.FeatureShowcaseDemo
 ```
 
-### 4) Visualizer Setup
-Python setup for the visualizer lives under `org.eclipse.papyrus.javagen.catan/visualize/README.md`.
+Machine intelligence demo (AI-driven game):
 
-On macOS/Linux:
+```powershell
+cd org.eclipse.papyrus.javagen.catan
+mvn -q -DskipTests compile
+java -cp target/classes Catan.MachineIntelligenceDemo
+```
+
+### 7) Visualizer setup (optional)
+Detailed setup is in `org.eclipse.papyrus.javagen.catan/visualize/README.md`.
+
+macOS/Linux:
 ```bash
 cd org.eclipse.papyrus.javagen.catan/visualize
 ./setup_visualizer.sh
+```
+
+Windows PowerShell:
+```powershell
+cd org.eclipse.papyrus.javagen.catan\visualize
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+git clone -b gym-rendering https://github.com/bcollazo/catanatron.git
+pip install -e ".\catanatron[web,gym,dev]"
+```
+
+## Tests
+From `org.eclipse.papyrus.javagen.catan`:
+
+```powershell
+mvn test
 ```
 
 ## Development Workflow
@@ -171,10 +245,14 @@ cd org.eclipse.papyrus.javagen.catan/visualize
 - If generated fields/types are placeholders, refine UML typing/mapping before regeneration.
 
 ## Player Colors
-In the visualizer, each player is represented by a different color:
-* **Player 1** – Red
-* **Player 2** – Blue
-* **Player 3** – Yellow
-* **Player 4** – White
+Seat prompts use:
+- Player 1: Red
+- Player 2: Blue
+- Player 3: Yellow
+- Player 4: White
 
-These colors are used to distinguish players' roads, settlements, and cities on the board visualization.
+Serialized visualizer colors in `state.json` use:
+- Player 1: `RED`
+- Player 2: `BLUE`
+- Player 3: `ORANGE`
+- Player 4: `WHITE`
