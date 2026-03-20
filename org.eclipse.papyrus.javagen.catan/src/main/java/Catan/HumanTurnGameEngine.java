@@ -99,13 +99,8 @@ public final class HumanTurnGameEngine {
         for (int turn = 1; turn <= turns; turn++) {
             for (Player current : players) {
                 if (!runSinglePlayerTurn(turn, current)) {
-                    publish(new GameEvent.GameEndedEvent(
-                            GameEvent.GameEndReason.INPUT_CLOSED,
-                            turn,
-                            current.getName(),
-                            current.getVictoryPoints(),
-                            "input closed"
-                    ));
+                    // The INPUT_CLOSED event was already published inside runSinglePlayerTurn.
+                    // We just need to exit.
                     return;
                 }
                 if (current.getVictoryPoints() >= 10) {
