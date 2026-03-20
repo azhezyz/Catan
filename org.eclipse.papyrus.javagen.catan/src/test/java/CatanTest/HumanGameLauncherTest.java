@@ -40,6 +40,19 @@ class HumanGameLauncherTest {
         return (String) method.invoke(null, visualizeDir);
     }
 
+    @SuppressWarnings("unchecked")
+    private static List<Object> invokePromptPlayerControlModes(Scanner scanner, List<String> names) throws Exception {
+        Method method = HumanGameLauncher.class.getDeclaredMethod("promptPlayerControlModes", Scanner.class, List.class);
+        method.setAccessible(true);
+        return (List<Object>) method.invoke(null, scanner, names);
+    }
+
+    private static Object invokeReadControlMode(Scanner scanner, String colorLabel, String playerName) throws Exception {
+        Method method = HumanGameLauncher.class.getDeclaredMethod("readControlMode", Scanner.class, String.class, String.class);
+        method.setAccessible(true);
+        return method.invoke(null, scanner, colorLabel, playerName);
+    }
+
     private static Process invokeStartVisualizerProcess(Path statePath) throws Exception {
         Method method = HumanGameLauncher.class.getDeclaredMethod("startVisualizerProcess", Path.class);
         method.setAccessible(true);
@@ -63,6 +76,24 @@ class HumanGameLauncherTest {
         String tooLong = "a".repeat(41);
         String accepted = invokeReadName(new Scanner(tooLong + "\nNeo\n"), "Player 1", "Alice");
         assertEquals("Neo", accepted);
+    }
+
+    @Test
+    void promptPlayerControlModesUsesHumanDefaultsOnBlankInput() throws Exception {
+        List<Object> modes = invokePromptPlayerControlModes(
+                new Scanner("\n\n\n\n"),
+                List.of("Alice", "Bob", "Charlie", "Diana")
+        );
+        assertEquals(4, modes.size());
+        for (Object mode : modes) {
+            assertEquals("HUMAN", ((Enum<?>) mode).name());
+        }
+    }
+
+    @Test
+    void readControlModeRejectsInvalidThenAcceptsValid() throws Exception {
+        Object mode = invokeReadControlMode(new Scanner("9\n2\n"), "Blue", "Bob");
+        assertEquals("AI_CONNECT_ROADS", ((Enum<?>) mode).name());
     }
 
     @Test
@@ -194,7 +225,7 @@ class HumanGameLauncherTest {
 
     @Test
     void mainWithCustomArguments() throws Exception {
-        String simulatedInput = "\n\n\n\nRoll\nGo\nRoll\nGo\n"; 
+        String simulatedInput = "\n\n\n\n\n\n\n\nRoll\nGo\nRoll\nGo\nRoll\nGo\nRoll\nGo\n";
         java.io.InputStream originalIn = System.in;
         
         try {

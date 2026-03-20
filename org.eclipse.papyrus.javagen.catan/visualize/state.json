@@ -1,5 +1,5 @@
 {
-  "robberTileId": 16,
+  "robberTileId": 5,
   "roads": [
     { "a": 6, "b": 7, "owner": "BLUE" },
     { "a": 8, "b": 9, "owner": "ORANGE" },
@@ -7,7 +7,9 @@
     { "a": 15, "b": 14, "owner": "WHITE" },
     { "a": 13, "b": 12, "owner": "RED" },
     { "a": 18, "b": 16, "owner": "RED" },
+    { "a": 16, "b": 21, "owner": "ORANGE" },
     { "a": 21, "b": 19, "owner": "ORANGE" },
+    { "a": 20, "b": 22, "owner": "WHITE" },
     { "a": 22, "b": 23, "owner": "WHITE" }
   ],
   "buildings": [
